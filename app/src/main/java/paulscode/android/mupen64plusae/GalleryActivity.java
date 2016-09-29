@@ -154,6 +154,8 @@ public class GalleryActivity extends AppCompatActivity implements GameSidebarAct
     // Selected donation item id
     String mSelectedDonationItem = null;
 
+    boolean mDonationDialogBeingShown = false;
+
     @Override
     protected void onNewIntent( Intent intent )
     {
@@ -656,7 +658,7 @@ public class GalleryActivity extends AppCompatActivity implements GameSidebarAct
             return true;
         case R.id.menuItem_donate: {
 
-            if(mIapHelper != null)
+            if(mIapHelper != null && !mDonationDialogBeingShown)
                 showInAppPurchases();
         }
             return true;
@@ -1281,6 +1283,7 @@ public class GalleryActivity extends AppCompatActivity implements GameSidebarAct
 
     private void showInAppPurchases()
     {
+        mDonationDialogBeingShown = true;
         ArrayList<String> donationOptions = new ArrayList<String>();
         donationOptions.add("one_dollar");
         donationOptions.add("three_dollar");
@@ -1310,8 +1313,9 @@ public class GalleryActivity extends AppCompatActivity implements GameSidebarAct
     @Override
     public void onDialogMenuItemSelected(int dialogId, String itemId)
     {
+        mDonationDialogBeingShown = false;
         // Have we been disposed of in the meantime? If so, quit.
-        if (mIapHelper == null) return;
+        if (mIapHelper == null || itemId == null) return;
 
         mSelectedDonationItem = itemId;
 
