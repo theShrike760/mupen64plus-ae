@@ -13,6 +13,7 @@
 #include "GLSL/glsl_CombinerProgramBuilder.h"
 #include "GLSL/glsl_SpecialShadersFactory.h"
 #include "GLSL/glsl_ShaderStorage.h"
+#include "opengl_Wrapper.h"
 
 using namespace opengl;
 
@@ -136,7 +137,7 @@ void ContextImpl::clearColorBuffer(f32 _red, f32 _green, f32 _blue, f32 _alpha)
 	enableScissor->enable(false);
 
 	m_cachedFunctions->getCachedClearColor()->setClearColor(_red, _green, _blue, _alpha);
-	glClear(GL_COLOR_BUFFER_BIT);
+	FunctionWrapper::glClear(GL_COLOR_BUFFER_BIT);
 
 	enableScissor->enable(true);
 }
@@ -149,18 +150,18 @@ void ContextImpl::clearDepthBuffer()
 
 #ifdef OS_ANDROID
 	depthMask->setDepthMask(false);
-	glClear(GL_DEPTH_BUFFER_BIT);
+	FunctionWrapper::glClear(GL_DEPTH_BUFFER_BIT);
 #endif
 
 	depthMask->setDepthMask(true);
-	glClear(GL_DEPTH_BUFFER_BIT);
+	FunctionWrapper::glClear(GL_DEPTH_BUFFER_BIT);
 
 	enableScissor->enable(true);
 }
 
 void ContextImpl::setPolygonOffset(f32 _factor, f32 _units)
 {
-	glPolygonOffset(_factor, _units);
+	FunctionWrapper::glPolygonOffset(_factor, _units);
 }
 
 /*---------------Texture-------------*/
@@ -173,7 +174,9 @@ graphics::ObjectHandle ContextImpl::createTexture(graphics::Parameter _target)
 void ContextImpl::deleteTexture(graphics::ObjectHandle _name)
 {
 	u32 glName(_name);
-	glDeleteTextures(1, &glName);
+	std::unique_ptr<GLuint[]> texture(new GLuint[1]);
+	texture[0] = glName;
+	FunctionWrapper::glDeleteTextures(1, std::move(texture));
 	m_init2DTexture->reset(_name);
 }
 
@@ -204,21 +207,21 @@ void ContextImpl::setTextureUnpackAlignment(s32 _param)
 s32 ContextImpl::getTextureUnpackAlignment() const
 {
 	GLint unpackAlignment;
-	glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlignment);
+	FunctionWrapper::glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlignment);
 	return unpackAlignment;
 }
 
 s32 ContextImpl::getMaxTextureSize() const
 {
 	GLint maxTextureSize;
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+	FunctionWrapper::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
 	return maxTextureSize;
 }
 
 void ContextImpl::bindImageTexture(const graphics::Context::BindImageTextureParameters & _params)
 {
 	if (IS_GL_FUNCTION_VALID(glBindImageTexture))
-		glBindImageTexture(GLuint(_params.imageUnit), GLuint(_params.texture), 0, GL_FALSE, 0, GLenum(_params.accessMode), GLenum(_params.textureFormat));
+		FunctionWrapper::glBindImageTexture(GLuint(_params.imageUnit), GLuint(_params.texture), 0, GL_FALSE, 0, GLenum(_params.accessMode), GLenum(_params.textureFormat));
 }
 
 u32 ContextImpl::convertInternalTextureFormat(u32 _format) const
@@ -254,7 +257,8 @@ void ContextImpl::deleteFramebuffer(graphics::ObjectHandle _name)
 {
 	u32 fbo(_name);
 	if (fbo != 0) {
-		glDeleteFramebuffers(1, &fbo);
+		std::unique_ptr<GLuint[]> buffers(new GLuint[1]{fbo});
+		FunctionWrapper::glDeleteFramebuffers(1, std::move(buffers));
 		m_cachedFunctions->getCachedBindFramebuffer()->reset();
 	}
 }
@@ -264,7 +268,7 @@ void ContextImpl::bindFramebuffer(graphics::BufferTargetParam _target, graphics:
 	if (m_glInfo.renderer == Renderer::VideoCore) {
 		CachedDepthMask * depthMask = m_cachedFunctions->getCachedDepthMask();
 		depthMask->setDepthMask(true);
-		glClear(GL_DEPTH_BUFFER_BIT);
+		FunctionWrapper::glClear(GL_DEPTH_BUFFER_BIT);
 	}
 	m_cachedFunctions->getCachedBindFramebuffer()->bind(_target, _name);
 }
@@ -400,7 +404,7 @@ void ContextImpl::drawLine(f32 _width, SPVertex * _vertices)
 f32 ContextImpl::getMaxLineWidth()
 {
 	GLfloat lineWidthRange[2] = { 0.0f, 0.0f };
-	glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, lineWidthRange);
+	FunctionWrapper::glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, lineWidthRange);
 	return lineWidthRange[1];
 }
 
