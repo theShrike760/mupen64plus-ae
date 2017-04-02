@@ -32,6 +32,14 @@ namespace opengl {
 
 			commandToExecute();
 
+			auto error = g_glGetError();
+			if (error != GL_NO_ERROR) {
+				std::stringstream errorString;
+				errorString << " OpenGL error: 0x" << std::hex << error;
+				LOG(LOG_ERROR, errorString.str().c_str());
+				throw std::runtime_error(errorString.str().c_str());
+			}
+
 			if (m_synced)
 			{
 				m_executed = true;
@@ -379,10 +387,10 @@ namespace opengl {
 	};
 
 	template <class pixelType>
-	class GlTexSubImage2DCommand : public OpenGlCommand
+	class GlTexSubImage2DUnbufferedCommand : public OpenGlCommand
 	{
 	public:
-		GlTexSubImage2DCommand(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height,
+		GlTexSubImage2DUnbufferedCommand(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height,
 			GLenum format, GLenum type, std::unique_ptr<pixelType[]> pixels):
 			OpenGlCommand(false), m_target(target), m_level(level), m_xoffset(xoffset), m_yoffset(yoffset),
 			m_width(width), m_height(height), m_format(format), m_type(type), m_pixels(std::move(pixels))
@@ -391,6 +399,13 @@ namespace opengl {
 
 		void commandToExecute(void) override
 		{
+			std::stringstream errorString;
+			errorString << "GlTexSubImage2DUnbuffered args: " << " target=" << m_target << " m_level=" << m_level
+						<< " m_xoffset=" << m_xoffset << " m_yoffset=" << m_yoffset << " m_width=" << m_width
+						<< " m_height=" << m_height << " m_format=0x" << std::hex << m_format << " m_type=0x" << m_type
+						<< " pixels=0x" << m_pixels.get();
+			LOG(LOG_ERROR, errorString.str().c_str());
+
 			g_glTexSubImage2D(m_target, m_level, m_xoffset, m_yoffset, m_width, m_height, m_format, m_type, m_pixels.get());
 		}
 	private:
@@ -403,6 +418,32 @@ namespace opengl {
 		GLenum m_format;
 		GLenum m_type;
 		std::unique_ptr<pixelType[]> m_pixels;
+	};
+
+	class GlTexSubImage2DBufferedCommand : public OpenGlCommand
+	{
+	public:
+		GlTexSubImage2DBufferedCommand(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height,
+										 GLenum format, GLenum type, std::size_t offset):
+				OpenGlCommand(false), m_target(target), m_level(level), m_xoffset(xoffset), m_yoffset(yoffset),
+				m_width(width), m_height(height), m_format(format), m_type(type), m_offset(offset)
+		{
+		}
+
+		void commandToExecute(void) override
+		{
+			g_glTexSubImage2D(m_target, m_level, m_xoffset, m_yoffset, m_width, m_height, m_format, m_type, (const GLvoid *)m_offset);
+		}
+	private:
+		GLenum m_target;
+		GLint m_level;
+		GLint m_xoffset;
+		GLint m_yoffset;
+		GLsizei m_width;
+		GLsizei m_height;
+		GLenum m_format;
+		GLenum m_type;
+		std::size_t m_offset;
 	};
 
 	class GlDrawArraysCommand : public OpenGlCommand
@@ -2036,10 +2077,10 @@ namespace opengl {
 	};
 
 	template <class pixelType>
-	class GlTextureSubImage2DCommand : public OpenGlCommand
+	class GlTextureSubImage2DUnbufferedCommand : public OpenGlCommand
 	{
 	public:
-		GlTextureSubImage2DCommand(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width,
+		GlTextureSubImage2DUnbufferedCommand(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width,
 			GLsizei height, GLenum format, GLenum type, std::unique_ptr<pixelType[]> pixels):
 			OpenGlCommand(false), m_texture(texture), m_level(level), m_xoffset(xoffset), m_yoffset(yoffset),
 			m_width(width), m_height(height), m_format(format), m_type(type), m_pixels(std::move(pixels))
@@ -2049,7 +2090,7 @@ namespace opengl {
 		void commandToExecute(void) override
 		{
 			g_glTextureSubImage2D(m_texture, m_level, m_xoffset, m_yoffset, m_width, m_height, m_format, m_type,
-				m_pixels.get());
+								  m_pixels.get());
 		}
 	private:
 		GLuint m_texture;
@@ -2061,6 +2102,33 @@ namespace opengl {
 		GLenum m_format;
 		GLenum m_type;
 		std::unique_ptr<pixelType[]> m_pixels;
+	};
+
+	class GlTextureSubImage2DBufferedCommand : public OpenGlCommand
+	{
+	public:
+		GlTextureSubImage2DBufferedCommand(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width,
+			GLsizei height, GLenum format, GLenum type, std::size_t offset):
+			OpenGlCommand(false), m_texture(texture), m_level(level), m_xoffset(xoffset), m_yoffset(yoffset),
+			m_width(width), m_height(height), m_format(format), m_type(type), m_offset(offset)
+		{
+		}
+
+		void commandToExecute(void) override
+		{
+			g_glTextureSubImage2D(m_texture, m_level, m_xoffset, m_yoffset, m_width, m_height, m_format, m_type,
+								  (const GLvoid *)m_offset);
+		}
+	private:
+		GLuint m_texture;
+		GLint m_level;
+		GLint m_xoffset;
+		GLint m_yoffset;
+		GLsizei m_width;
+		GLsizei m_height;
+		GLenum m_format;
+		GLenum m_type;
+		std::size_t m_offset;
 	};
 
 	class GlTextureStorage2DMultisampleCommand : public OpenGlCommand

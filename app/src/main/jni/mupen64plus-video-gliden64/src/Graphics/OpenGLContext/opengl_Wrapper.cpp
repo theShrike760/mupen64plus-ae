@@ -103,6 +103,11 @@ namespace opengl {
 		executeCommand(std::make_shared<GlReadPixelsCommand>(x, y, width, height, format, type, pixels));
 	}
 
+	void FunctionWrapper::glTexSubImage2DBuffered(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, std::size_t offset)
+	{
+		executeCommand(std::make_shared<GlTexSubImage2DBufferedCommand>(target, level, xoffset, yoffset, width, height, format, type, offset));
+	}
+
 	void FunctionWrapper::glDrawArrays(GLenum mode, GLint first, GLsizei count)
 	{
 		executeCommand(std::make_shared<GlDrawArraysCommand>(mode, first, count));
@@ -546,6 +551,11 @@ namespace opengl {
 	void FunctionWrapper::glTextureStorage2D(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height)
 	{
 		executeCommand(std::make_shared<GlTextureStorage2DCommand>(texture, levels, internalformat, width, height));
+	}
+
+	void FunctionWrapper::glTextureSubImage2DBuffered(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, std::size_t offset)
+	{
+		executeCommand(std::make_shared<GlTextureSubImage2DBufferedCommand>(texture, level, xoffset, yoffset, width, height, format, type, offset));
 	}
 
 	void FunctionWrapper::glTextureStorage2DMultisample(GLuint texture, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations)
