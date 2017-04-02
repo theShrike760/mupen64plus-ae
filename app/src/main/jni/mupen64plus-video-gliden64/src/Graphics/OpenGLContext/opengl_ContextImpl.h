@@ -45,7 +45,7 @@ namespace opengl {
 		void clearDepthBuffer() override;
 
 		void setPolygonOffset(f32 _factor, f32 _units) override;
-		
+
 		/*---------------Texture-------------*/
 
 		graphics::ObjectHandle createTexture(graphics::Parameter _target) override;

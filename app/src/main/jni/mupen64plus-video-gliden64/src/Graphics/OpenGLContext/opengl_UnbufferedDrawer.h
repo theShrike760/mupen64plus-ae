@@ -19,8 +19,6 @@ namespace opengl {
 		void drawLine(f32 _width, SPVertex * _vertices) override;
 
 	private:
-		bool _updateAttribPointer(u32 _index, const void * _ptr);
-
 		const GLInfo & m_glInfo;
 		CachedVertexAttribArray * m_cachedAttribArray;
 		std::array<const void*, MaxAttribIndex> m_attribsData;

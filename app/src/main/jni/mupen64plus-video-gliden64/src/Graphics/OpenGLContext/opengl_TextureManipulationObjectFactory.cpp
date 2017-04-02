@@ -60,8 +60,11 @@ namespace opengl {
 		void init2DTexture(const graphics::Context::InitTextureParams & _params) override
 		{
 			if (_params.msaaLevel == 0) {
-				std::unique_ptr<u8[]> data(new u8[_params.dataBytes]);
-				std::copy_n(reinterpret_cast<const char*>(_params.data), _params.dataBytes, data.get());
+				std::unique_ptr<u8[]> data(nullptr);
+				if(_params.dataBytes != 0 && _params.data != nullptr) {
+					std::unique_ptr<u8[]> data(new u8[_params.dataBytes]);
+					std::copy_n(reinterpret_cast<const char*>(_params.data), _params.dataBytes, data.get());
+				}
 
 				m_bind->bind(_params.textureUnitIndex, graphics::textureTarget::TEXTURE_2D, _params.handle);
 				FunctionWrapper::glTexImage2D(GL_TEXTURE_2D,
@@ -104,8 +107,7 @@ namespace opengl {
 		}
 
 		Init2DTexStorage(CachedBindTexture* _bind, bool _imageTextures)
-			: m_bind(_bind)
-			, m_imageTextures(_imageTextures) {
+			: m_bind(_bind), m_imageTextures(_imageTextures) {
 		}
 
 		void init2DTexture(const graphics::Context::InitTextureParams & _params) override
@@ -122,16 +124,14 @@ namespace opengl {
 				}
 
 				if (_params.data != nullptr) {
-					std::unique_ptr<u8[]> data(new u8[_params.dataBytes]);
-					std::copy_n(reinterpret_cast<const char*>(_params.data), _params.dataBytes, data.get());
-					FunctionWrapper::glTexSubImage2D(GL_TEXTURE_2D,
+					FunctionWrapper::glTexSubImage2DBuffered(GL_TEXTURE_2D,
 						_params.mipMapLevel,
 						0, 0,
 						_params.width,
 						_params.height,
 						GLuint(_params.format),
 						GLenum(_params.dataType),
-						std::move(data));
+						reinterpret_cast<std::size_t>(_params.data));
 				}
 
 				if (_params.ImageUnit.isValid() && m_imageTextures)
@@ -174,9 +174,9 @@ namespace opengl {
 			return false;
 #endif
 		}
+
 		void init2DTexture(const graphics::Context::InitTextureParams & _params) override
 		{
-
 			if (_params.msaaLevel == 0) {
 				if (m_handle != _params.handle) {
 					m_handle = _params.handle;
@@ -188,18 +188,14 @@ namespace opengl {
 				}
 
 				if (_params.data != nullptr) {
-
-					std::unique_ptr<u8[]> data(new u8[_params.dataBytes]);
-					std::copy_n(reinterpret_cast<const char*>(_params.data), _params.dataBytes, data.get());
-
-					FunctionWrapper::glTextureSubImage2D(GLuint(_params.handle),
+					FunctionWrapper::glTextureSubImage2DBuffered(GLuint(_params.handle),
 						_params.mipMapLevel,
 						0, 0,
 						_params.width,
 						_params.height,
 						GLuint(_params.format),
 						GLenum(_params.dataType),
-						std::move(data));
+						reinterpret_cast<std::size_t>(_params.data));
 				}
 
 				if (_params.ImageUnit.isValid()) {
@@ -233,27 +229,42 @@ namespace opengl {
 	class Update2DTexSubImage : public Update2DTexture
 	{
 	public:
-		Update2DTexSubImage(CachedBindTexture* _bind, bool _imageTextures)
-			: m_bind(_bind)
-			, m_imageTextures(_imageTextures) {
+		Update2DTexSubImage(const GLInfo & _glinfo, CachedBindTexture* _bind, bool _imageTextures)
+			: m_glinfo(_glinfo), m_bind(_bind), m_imageTextures(_imageTextures) {
 		}
 
 		void update2DTexture(const graphics::Context::UpdateTextureDataParams & _params) override
 		{
 			m_bind->bind(_params.textureUnitIndex, GL_TEXTURE_2D, _params.handle);
 
-			std::unique_ptr<u8[]> data(new u8[_params.dataBytes]);
-			std::copy_n(reinterpret_cast<const char*>(_params.data), _params.dataBytes, data.get());
+			if(_params.fromBuffer && m_glinfo.bufferStorage ) {
+				FunctionWrapper::glTexSubImage2DBuffered(GL_TEXTURE_2D,
+					_params.mipMapLevel,
+					_params.x,
+					_params.y,
+					_params.width,
+					_params.height,
+					GLuint(_params.format),
+					GLenum(_params.dataType),
+					reinterpret_cast<std::size_t>(_params.data));
+			} else {
+				std::unique_ptr<u8[]> data(nullptr);
+				if(_params.dataBytes != 0 && _params.data != nullptr) {
+					data = std::unique_ptr<u8[]>(new u8[_params.dataBytes]);
+					std::copy_n(reinterpret_cast<const char*>(_params.data), _params.dataBytes, data.get());
+				}
 
-			FunctionWrapper::glTexSubImage2D(GL_TEXTURE_2D,
-				_params.mipMapLevel,
-				_params.x,
-				_params.y,
-				_params.width,
-				_params.height,
-				GLuint(_params.format),
-				GLenum(_params.dataType),
-				std::move(data));
+				FunctionWrapper::glTexSubImage2DUnbuffered(GL_TEXTURE_2D,
+					_params.mipMapLevel,
+					_params.x,
+					_params.y,
+					_params.width,
+					_params.height,
+					GLuint(_params.format),
+					GLenum(_params.dataType),
+					std::move(data));
+			}
+
 
 			if (_params.ImageUnit.isValid() && _params.internalFormat.isValid() && m_imageTextures)
 				FunctionWrapper::glBindImageTexture(GLuint(_params.ImageUnit), GLuint(_params.handle),
@@ -263,6 +274,7 @@ namespace opengl {
 	private:
 		CachedBindTexture* m_bind;
 		bool m_imageTextures;
+		const GLInfo & m_glinfo;
 	};
 
 	class Update2DTextureSubImage : public Update2DTexture
@@ -276,20 +288,39 @@ namespace opengl {
 #endif
 		}
 
+		Update2DTextureSubImage(const GLInfo & _glinfo)
+				: m_glinfo(_glinfo){
+		}
+
 		void update2DTexture(const graphics::Context::UpdateTextureDataParams & _params) override
 		{
-			std::unique_ptr<u8[]> data(new u8[_params.dataBytes]);
-			std::copy_n(reinterpret_cast<const char*>(_params.data), _params.dataBytes, data.get());
+			if(_params.fromBuffer && m_glinfo.bufferStorage) {
+				FunctionWrapper::glTextureSubImage2DBuffered(GLuint(_params.handle),
+					_params.mipMapLevel,
+					_params.x,
+					_params.y,
+					_params.width,
+					_params.height,
+					GLuint(_params.format),
+					GLenum(_params.dataType),
+					reinterpret_cast<std::size_t>(_params.data));
+			} else {
+				std::unique_ptr<u8[]> data(nullptr);
+				if(_params.dataBytes != 0 && _params.data != nullptr) {
+					std::unique_ptr<u8[]> data(new u8[_params.dataBytes]);
+					std::copy_n(reinterpret_cast<const char*>(_params.data), _params.dataBytes, data.get());
+				}
 
-			FunctionWrapper::glTextureSubImage2D(GLuint(_params.handle),
-				_params.mipMapLevel,
-				_params.x,
-				_params.y,
-				_params.width,
-				_params.height,
-				GLuint(_params.format),
-				GLenum(_params.dataType),
-				std::move(data));
+				FunctionWrapper::glTextureSubImage2DUnbuffered(GLuint(_params.handle),
+					_params.mipMapLevel,
+					_params.x,
+					_params.y,
+					_params.width,
+					_params.height,
+					GLuint(_params.format),
+					GLenum(_params.dataType),
+					std::move(data));
+			}
 
 			if (_params.ImageUnit.isValid() && _params.internalFormat.isValid()) {
 				assert(IS_GL_FUNCTION_VALID(glBindImageTexture));
@@ -297,6 +328,8 @@ namespace opengl {
 				 0, GL_FALSE, GL_FALSE, GL_READ_ONLY, GLuint(_params.internalFormat));
 			}
 		}
+	private:
+		const GLInfo & m_glinfo;
 	};
 
 	/*---------------Set2DTextureParameters-------------*/
@@ -411,9 +444,9 @@ namespace opengl {
 	Update2DTexture * TextureManipulationObjectFactory::getUpdate2DTexture() const
 	{
 		if (Update2DTextureSubImage::Check(m_glInfo))
-			return new Update2DTextureSubImage;
+			return new Update2DTextureSubImage(m_glInfo);
 
-		return new Update2DTexSubImage(m_cachedFunctions.getCachedBindTexture(), m_glInfo.imageTextures);
+		return new Update2DTexSubImage(m_glInfo, m_cachedFunctions.getCachedBindTexture(), m_glInfo.imageTextures);
 	}
 
 	Set2DTextureParameters * TextureManipulationObjectFactory::getSet2DTextureParameters() const
