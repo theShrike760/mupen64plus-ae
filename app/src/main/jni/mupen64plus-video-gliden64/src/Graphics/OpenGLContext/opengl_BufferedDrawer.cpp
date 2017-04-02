@@ -217,11 +217,8 @@ void BufferedDrawer::drawTriangles(const graphics::Context::DrawTriangleParamete
 		//std::unique_ptr<char[]> indices
 
 		char* indices = (char*)nullptr + m_trisBuffers.ebo.pos - _params.elementsCount;
-		std::unique_ptr<char[]> indicesCopy(new char[_params.elementsCount]);
-		std::copy_n(indices, _params.elementsCount, indicesCopy.get());
-
 		FunctionWrapper::glDrawElementsBaseVertex(GLenum(_params.mode), _params.elementsCount, GL_UNSIGNED_BYTE,
-			std::move(indicesCopy), m_trisBuffers.vbo.pos - _params.verticesCount);
+			indices, m_trisBuffers.vbo.pos - _params.verticesCount);
 		return;
 	}
 
@@ -230,12 +227,9 @@ void BufferedDrawer::drawTriangles(const graphics::Context::DrawTriangleParamete
 	const GLint vboStartPos = m_trisBuffers.vbo.pos - _params.verticesCount;
 	for (GLint i = 0; i < _params.elementsCount; i += 3) {
 		char* indices = (char*)nullptr + eboStartPos + i;
-		std::unique_ptr<char[]> indicesCopy(new char[3]);
-		std::copy_n(indices, _params.elementsCount, indicesCopy.get());
-
 		FunctionWrapper::glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		FunctionWrapper::glDrawElementsBaseVertex(GLenum(_params.mode), 3, GL_UNSIGNED_BYTE,
-			std::move(indicesCopy), vboStartPos);
+			indices, vboStartPos);
 	}
 }
 

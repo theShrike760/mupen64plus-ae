@@ -26,7 +26,6 @@
 #define GET_GL_FUNCTION(proc_name) g_##proc_name
 
 #ifdef EGL
-
 extern PFNGLBLENDFUNCPROC g_glBlendFunc;
 extern PFNGLPIXELSTOREIPROC g_glPixelStorei;
 extern PFNGLCLEARCOLORPROC g_glClearColor;

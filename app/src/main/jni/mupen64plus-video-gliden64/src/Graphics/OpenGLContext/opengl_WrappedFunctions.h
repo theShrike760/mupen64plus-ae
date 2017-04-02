@@ -2265,26 +2265,25 @@ namespace opengl {
 		GLint m_level;
 	};
 
-	template <class indiceType>
 	class GlDrawElementsBaseVertexCommand : public OpenGlCommand
 	{
 	public:
-		GlDrawElementsBaseVertexCommand(GLenum mode, GLsizei count, GLenum type, std::unique_ptr<indiceType[]> indices,
+		GlDrawElementsBaseVertexCommand(GLenum mode, GLsizei count, GLenum type, const char* indices,
 										GLint basevertex):
-			OpenGlCommand(false), m_mode(mode), m_count(count), m_type(type), m_indices(std::move(indices)),
+			OpenGlCommand(false), m_mode(mode), m_count(count), m_type(type), m_indices(indices),
 			m_basevertex(basevertex)
 		{
 		}
 
 		void commandToExecute(void) override
 		{
-			g_glDrawElementsBaseVertex(m_mode, m_count, m_type, m_indices.get(), m_basevertex);
+			g_glDrawElementsBaseVertex(m_mode, m_count, m_type, m_indices, m_basevertex);
 		}
 	private:
 		GLenum m_mode;
 		GLsizei m_count;
 		GLenum m_type;
-		std::unique_ptr<indiceType[]> m_indices;
+		const char*  m_indices;
 		GLint m_basevertex;
 	};
 
@@ -2304,5 +2303,19 @@ namespace opengl {
 		GLenum m_target;
 		GLintptr m_offset;
 		GLsizeiptr m_length;
+	};
+
+	class GlFinishCommand : public OpenGlCommand
+	{
+	public:
+		GlFinishCommand(void):
+				OpenGlCommand(true)
+		{
+		}
+
+		void commandToExecute(void) override
+		{
+			g_glFinish();
+		}
 	};
 }

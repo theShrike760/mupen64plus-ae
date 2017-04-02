@@ -593,8 +593,19 @@ namespace opengl {
 		executeCommand(std::make_shared<GlNamedFramebufferTextureCommand>(framebuffer, attachment, texture, level));
 	}
 
+	void FunctionWrapper::glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const char* indices, GLint basevertex)
+	{
+		executeCommand(std::make_shared<GlDrawElementsBaseVertexCommand>(mode, count, type, std::move(indices), basevertex));
+	}
+
 	void FunctionWrapper::glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length)
 	{
 		executeCommand(std::make_shared<GlFlushMappedBufferRangeCommand>(target, offset, length));
 	}
+
+	void FunctionWrapper::glFinish(void)
+	{
+		executeCommand(std::make_shared<GlFinishCommand>());
+	}
+
 }

@@ -35,7 +35,7 @@ void ColorBufferReaderWithPixelBuffer::_initBuffers()
 	// Initialize Pixel Buffer Objects
 	for (u32 i = 0; i < _numPBO; ++i) {
 		m_bindBuffer->bind(Parameter(GL_PIXEL_PACK_BUFFER), ObjectHandle(m_PBO[i]));
-		FunctionWrapper::glBufferData(GL_PIXEL_PACK_BUFFER, m_pTexture->textureBytes, nullptr, GL_DYNAMIC_READ);
+		FunctionWrapper::glBufferData(GL_PIXEL_PACK_BUFFER, m_pTexture->textureBytes, std::move(std::unique_ptr<u8[]>(nullptr)), GL_DYNAMIC_READ);
 	}
 	m_bindBuffer->bind(Parameter(GL_PIXEL_PACK_BUFFER), ObjectHandle::null);
 }
