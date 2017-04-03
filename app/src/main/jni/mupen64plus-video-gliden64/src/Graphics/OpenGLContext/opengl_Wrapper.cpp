@@ -303,6 +303,12 @@ namespace opengl {
 		executeCommand(std::make_shared<GlVertexAttribPointerBufferedCommand>(index, size, type, normalized, stride, offset));
 	}
 
+	void FunctionWrapper::glVertexAttribPointerNotThreadSafe(GLuint index, GLint size, GLenum type, GLboolean normalized,
+		GLsizei stride, const void *pointer)
+	{
+		executeCommand(std::make_shared<GlVertexAttribPointerNotThreadSafeCommand>(index, size, type, normalized, stride, pointer));
+	}
+
 	void FunctionWrapper::glVertexAttribPointerUnbuffered(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride,
 		std::size_t offset, std::shared_ptr<std::vector<char>> data)
 	{

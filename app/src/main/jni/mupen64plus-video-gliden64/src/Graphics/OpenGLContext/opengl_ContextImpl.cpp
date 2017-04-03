@@ -5,6 +5,7 @@
 #include "opengl_ContextImpl.h"
 #include "opengl_BufferedDrawer.h"
 #include "opengl_UnbufferedDrawer.h"
+#include "opengl_UnbufferedDrawerThreadSafe.h"
 #include "opengl_ColorBufferReaderWithPixelBuffer.h"
 #include "opengl_ColorBufferReaderWithBufferStorage.h"
 #include "opengl_ColorBufferReaderWithEGLImage.h"
