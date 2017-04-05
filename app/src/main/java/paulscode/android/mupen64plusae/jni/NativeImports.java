@@ -21,6 +21,8 @@
 package paulscode.android.mupen64plusae.jni;
 
 
+import android.util.Log;
+
 /**
  * Call-ins made from the native ae-imports library to Java. Any function names changed here should
  * also be changed in the corresponding C code, and vice versa.
@@ -51,6 +53,9 @@ public class NativeImports extends CoreInterface
 
     public static void FPSCounter (int fps)
     {
-        sFpsListener.onFpsChanged(fps);
+        if(sFpsListener != null)
+        {
+            sFpsListener.onFpsChanged(fps);
+        }
     }
 }

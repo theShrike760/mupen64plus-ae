@@ -57,7 +57,7 @@ extern DECLSPEC void Android_JNI_InitImports(JNIEnv* env, jclass cls)
     mActivityClass = (jclass) env->NewGlobalRef(cls);
     midStateCallback = env->GetStaticMethodID(mActivityClass, "stateCallback", "(II)V");
     midFPSCounter = env->GetStaticMethodID(mActivityClass, "FPSCounter", "(I)V");
-    if (!midStateCallback)
+    if (!midStateCallback || !midFPSCounter)
     {
         LOGE("Couldn't locate Java callbacks, check that they're named and typed correctly");
     }
@@ -96,6 +96,10 @@ extern DECLSPEC void Android_JNI_FPSCounter(int fps)
 {
     JNIEnv *env;
     if (mJavaVM->GetEnv((void**) &env, JNI_VERSION_1_4) != JNI_OK)
-        return;
+	{
+		mJavaVM->AttachCurrentThread(&env, NULL);
+		return;
+	}
+
     env->CallStaticVoidMethod(mActivityClass, midFPSCounter, fps);
 }

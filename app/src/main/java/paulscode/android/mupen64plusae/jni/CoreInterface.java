@@ -149,7 +149,7 @@ public class CoreInterface
     protected static GamePrefs sGamePrefs = null;
 
     //Frame rate info - used by ae-vidext
-    protected static OnFpsChangedListener sFpsListener;
+    protected static OnFpsChangedListener sFpsListener = null;
 
     // Activity and threading objects - used internally
     private static AppCompatActivity sActivity = null;

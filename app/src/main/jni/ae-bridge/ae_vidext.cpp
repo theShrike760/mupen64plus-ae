@@ -8,6 +8,7 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <android/log.h>
 //#include <android/native_app_glue/android_native_app_glue.h>
 
 EGLDisplay display;
@@ -331,6 +332,7 @@ extern DECLSPEC m64p_error VidExtFuncGLSwapBuf()
     }
     if (surface != EGL_NO_SURFACE && !isPaused) {
         eglSwapBuffers(display, surface);
+
         if (FPSRecalcPeriod > 0) {
             frameCount++;
             if (frameCount >= FPSRecalcPeriod) {
@@ -344,6 +346,7 @@ extern DECLSPEC m64p_error VidExtFuncGLSwapBuf()
             }
         }
     }
+
     return M64ERR_SUCCESS;
 }
 
