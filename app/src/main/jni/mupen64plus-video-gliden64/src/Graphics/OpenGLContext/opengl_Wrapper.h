@@ -13,12 +13,16 @@ namespace opengl {
 	private:
 		static void executeCommand(std::shared_ptr<OpenGlCommand> _command);
 
+		static void executePriorityCommand(std::shared_ptr<OpenGlCommand> _command);
+
 		static void commandLoop(void);
 
 		static BlockingQueue<std::shared_ptr<OpenGlCommand>> m_commandQueue;
+		static BlockingQueue<std::shared_ptr<OpenGlCommand>> m_priorityCommandQueue;
 
 		static bool m_threaded_wrapper;
 		static bool m_shutdown;
+		static bool m_glInitialized;
 		static std::thread m_commandExecutionThread;
 	public:
 		static void setThreadedMode(void);

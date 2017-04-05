@@ -4,8 +4,10 @@ namespace opengl {
 
 	bool FunctionWrapper::m_threaded_wrapper = false;
 	bool FunctionWrapper::m_shutdown = false;
+	bool FunctionWrapper::m_glInitialized = false;
 	std::thread FunctionWrapper::m_commandExecutionThread;
 	BlockingQueue<std::shared_ptr<OpenGlCommand>> FunctionWrapper::m_commandQueue;
+	BlockingQueue<std::shared_ptr<OpenGlCommand>> FunctionWrapper::m_priorityCommandQueue;
 
 	void FunctionWrapper::executeCommand(std::shared_ptr<OpenGlCommand> _command)
 	{
@@ -17,12 +19,36 @@ namespace opengl {
 		}
 	}
 
+	void FunctionWrapper::executePriorityCommand(std::shared_ptr<OpenGlCommand> _command)
+	{
+		if (m_threaded_wrapper) {
+			m_priorityCommandQueue.push(_command);
+			_command->waitOnCommand();
+		} else {
+			_command->performCommand();
+		}
+	}
+
 	void FunctionWrapper::commandLoop(void)
 	{
-		while(!m_shutdown || m_commandQueue.size() != 0)
+		while(!m_shutdown || m_commandQueue.size() != 0 || m_priorityCommandQueue.size() != 0)
 		{
 			std::shared_ptr<OpenGlCommand> command;
+			std::shared_ptr<OpenGlCommand> priorityCommand;
+			//Take care of all the priority commands before other commands
+			while(m_glInitialized && m_priorityCommandQueue.size() > 0) {
+				priorityCommand = m_priorityCommandQueue.pop();
+				priorityCommand->performCommand();
+			}
+
 			if(m_commandQueue.tryPop(command, std::chrono::milliseconds(10))) {
+
+				//Something could had been inserted while we were waiting for a low priority command
+				while(m_glInitialized && m_priorityCommandQueue.size() > 0) {
+					priorityCommand = m_priorityCommandQueue.pop();
+					priorityCommand->performCommand();
+				}
+
 				command->performCommand();
 			}
 		}
@@ -151,7 +177,7 @@ namespace opengl {
 
 	void FunctionWrapper::glGetFloatv(GLenum pname, GLfloat *data)
 	{
-		executeCommand(std::make_shared<GlGetFloatvCommand>(pname, data));
+		executePriorityCommand(std::make_shared<GlGetFloatvCommand>(pname, data));
 	}
 
 	void FunctionWrapper::glDeleteTextures(GLsizei n, std::unique_ptr<GLuint[]> textures)
@@ -161,6 +187,7 @@ namespace opengl {
 
 	void FunctionWrapper::glGenTextures(GLsizei n, GLuint *textures)
 	{
+		//TODO: This should be possible to do with executePriorityCommand, but it causes bugs with it somehow
 		executeCommand(std::make_shared<GlGenTexturesCommand>(n, textures));
 	}
 
@@ -373,7 +400,7 @@ namespace opengl {
 
 	void FunctionWrapper::glGenFramebuffers(GLsizei n, GLuint *framebuffers)
 	{
-		executeCommand(std::make_shared<GlGenFramebuffersCommand>(n, framebuffers));
+		executePriorityCommand(std::make_shared<GlGenFramebuffersCommand>(n, framebuffers));
 	}
 
 	void FunctionWrapper::glBindFramebuffer(GLenum target, GLuint framebuffer)
@@ -403,7 +430,7 @@ namespace opengl {
 
 	void FunctionWrapper::glGenRenderbuffers(GLsizei n, GLuint *renderbuffers)
 	{
-		executeCommand(std::make_shared<GlGenRenderbuffersCommand>(n, renderbuffers));
+		executePriorityCommand(std::make_shared<GlGenRenderbuffersCommand>(n, renderbuffers));
 	}
 
 	void FunctionWrapper::glBindRenderbuffer(GLenum target, GLuint renderbuffer)
@@ -444,7 +471,7 @@ namespace opengl {
 
 	void FunctionWrapper::glGenVertexArrays(GLsizei n, GLuint *arrays)
 	{
-		executeCommand(std::make_shared<GlGenVertexArraysCommand>(n, arrays));
+		executePriorityCommand(std::make_shared<GlGenVertexArraysCommand>(n, arrays));
 	}
 
 	void FunctionWrapper::glBindVertexArray(GLuint array)
@@ -459,7 +486,7 @@ namespace opengl {
 
 	void FunctionWrapper::glGenBuffers(GLsizei n, GLuint *buffers)
 	{
-		executeCommand(std::make_shared<GlGenBuffersCommand>(n, buffers));
+		executePriorityCommand(std::make_shared<GlGenBuffersCommand>(n, buffers));
 	}
 
 	void FunctionWrapper::glBindBuffer(GLenum target, GLuint buffer)
@@ -504,7 +531,7 @@ namespace opengl {
 	const GLubyte* FunctionWrapper::glGetStringi(GLenum name, GLuint index)
 	{
 		const GLubyte* returnValue;
-		executeCommand(std::make_shared<GlGetStringiCommand>(name, index, returnValue));
+		executePriorityCommand(std::make_shared<GlGetStringiCommand>(name, index, returnValue));
 		return returnValue;
 	}
 
@@ -604,17 +631,17 @@ namespace opengl {
 
 	void FunctionWrapper::glCreateTextures(GLenum target, GLsizei n, GLuint *textures)
 	{
-		executeCommand(std::make_shared<GlCreateTexturesCommand>(target, n, textures));
+		executePriorityCommand(std::make_shared<GlCreateTexturesCommand>(target, n, textures));
 	}
 
 	void FunctionWrapper::glCreateBuffers(GLsizei n, GLuint *buffers)
 	{
-		executeCommand(std::make_shared<GlCreateBuffersCommand>(n, buffers));
+		executePriorityCommand(std::make_shared<GlCreateBuffersCommand>(n, buffers));
 	}
 
 	void FunctionWrapper::glCreateFramebuffers(GLsizei n, GLuint *framebuffers)
 	{
-		executeCommand(std::make_shared<GlCreateFramebuffersCommand>(n, framebuffers));
+		executePriorityCommand(std::make_shared<GlCreateFramebuffersCommand>(n, framebuffers));
 	}
 
 	void FunctionWrapper::glNamedFramebufferTexture(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level)
@@ -657,6 +684,7 @@ namespace opengl {
 	{
 		m64p_error returnValue;
 		executeCommand(std::make_shared<CoreVideoSetVideoModeCommand>(screenWidth, screenHeight, bitsPerPixel, mode, flags, returnValue));
+		m_glInitialized = true;
 		return returnValue;
 	}
 

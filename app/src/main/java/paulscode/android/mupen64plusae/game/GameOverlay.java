@@ -23,7 +23,6 @@ package paulscode.android.mupen64plusae.game;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 import paulscode.android.mupen64plusae.input.TouchController;
@@ -93,8 +92,6 @@ public class GameOverlay extends View implements TouchController.OnStateChangedL
     @Override
     public void onFpsChanged( int fps )
     {
-        Log.e( "GameOverlay", "FPS changed=" + fps );
-
         // Update the FPS indicator assets, and redraw if required
         if( mTouchMap != null && mTouchMap.updateFps( fps ) )
             postInvalidate();
