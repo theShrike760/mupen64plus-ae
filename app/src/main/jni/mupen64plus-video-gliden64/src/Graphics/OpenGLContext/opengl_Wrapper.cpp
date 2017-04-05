@@ -35,11 +35,12 @@ namespace opengl {
 		{
 			std::shared_ptr<OpenGlCommand> command;
 			std::shared_ptr<OpenGlCommand> priorityCommand;
+			/*
 			//Take care of all the priority commands before other commands
 			while(m_glInitialized && m_priorityCommandQueue.size() > 0) {
 				priorityCommand = m_priorityCommandQueue.pop();
 				priorityCommand->performCommand();
-			}
+			}*/
 
 			if(m_commandQueue.tryPop(command, std::chrono::milliseconds(10))) {
 
@@ -188,7 +189,7 @@ namespace opengl {
 	void FunctionWrapper::glGenTextures(GLsizei n, GLuint *textures)
 	{
 		//TODO: This should be possible to do with executePriorityCommand, but it causes bugs with it somehow
-		executeCommand(std::make_shared<GlGenTexturesCommand>(n, textures));
+		executePriorityCommand(std::make_shared<GlGenTexturesCommand>(n, textures));
 	}
 
 	void FunctionWrapper::glTexParameterf(GLenum target, GLenum pname, GLfloat param)

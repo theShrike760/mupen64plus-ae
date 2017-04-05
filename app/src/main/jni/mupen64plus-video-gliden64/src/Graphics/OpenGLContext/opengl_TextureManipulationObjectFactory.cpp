@@ -27,6 +27,7 @@ namespace opengl {
 		{
 			GLuint glName;
 			FunctionWrapper::glGenTextures(1, &glName);
+			LOG(LOG_ERROR, "Created texture id=%d",glName);
 			return graphics::ObjectHandle(glName);
 		}
 	};
