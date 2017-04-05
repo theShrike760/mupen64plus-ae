@@ -38,7 +38,7 @@ namespace opengl {
 		void performCommand(void) {
 
 			commandToExecute();
-/*
+#ifdef GL_DEBUG
 			if(m_isGlCommand)
 			{
 				auto error = g_glGetError();
@@ -49,7 +49,7 @@ namespace opengl {
 					throw std::runtime_error(errorString.str().c_str());
 				}
 			}
-*/
+#endif
 			if (m_synced)
 			{
 
@@ -91,7 +91,7 @@ namespace opengl {
 	{
 	public:
 		GlPixelStoreiCommand(GLenum pname, GLint param):
-			OpenGlCommand(false, "glPixelStorei"), m_pname(pname), m_param(param)
+				OpenGlCommand(false, "glPixelStorei"), m_pname(pname), m_param(param)
 		{
 		}
 
