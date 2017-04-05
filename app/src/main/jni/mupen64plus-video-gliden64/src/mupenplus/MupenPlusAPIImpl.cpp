@@ -63,17 +63,17 @@ m64p_error PluginAPI::PluginStartup(m64p_dynlib_handle _CoreLibHandle)
 	ConfigGetParamString = (ptr_ConfigGetParamString)DLSYM(_CoreLibHandle, "ConfigGetParamString");
 
 	/* Get the core Video Extension function pointers from the library handle */
-	CoreVideo_Init = (ptr_VidExt_Init) DLSYM(_CoreLibHandle, "VidExt_Init"); //****
-	CoreVideo_Quit = (ptr_VidExt_Quit) DLSYM(_CoreLibHandle, "VidExt_Quit"); //****
+	CoreVideo_Init = (ptr_VidExt_Init) DLSYM(_CoreLibHandle, "VidExt_Init");
+	CoreVideo_Quit = (ptr_VidExt_Quit) DLSYM(_CoreLibHandle, "VidExt_Quit");
 	CoreVideo_ListFullscreenModes = (ptr_VidExt_ListFullscreenModes) DLSYM(_CoreLibHandle, "VidExt_ListFullscreenModes");
-	CoreVideo_SetVideoMode = (ptr_VidExt_SetVideoMode) DLSYM(_CoreLibHandle, "VidExt_SetVideoMode"); //****
+	CoreVideo_SetVideoMode = (ptr_VidExt_SetVideoMode) DLSYM(_CoreLibHandle, "VidExt_SetVideoMode");
 	CoreVideo_SetCaption = (ptr_VidExt_SetCaption) DLSYM(_CoreLibHandle, "VidExt_SetCaption");
 	CoreVideo_ToggleFullScreen = (ptr_VidExt_ToggleFullScreen) DLSYM(_CoreLibHandle, "VidExt_ToggleFullScreen");
 	CoreVideo_ResizeWindow = (ptr_VidExt_ResizeWindow) DLSYM(_CoreLibHandle, "VidExt_ResizeWindow");
 	CoreVideo_GL_GetProcAddress = (ptr_VidExt_GL_GetProcAddress) DLSYM(_CoreLibHandle, "VidExt_GL_GetProcAddress");
-	CoreVideo_GL_SetAttribute = (ptr_VidExt_GL_SetAttribute) DLSYM(_CoreLibHandle, "VidExt_GL_SetAttribute"); //****
-	CoreVideo_GL_GetAttribute = (ptr_VidExt_GL_GetAttribute) DLSYM(_CoreLibHandle, "VidExt_GL_GetAttribute"); //****
-	CoreVideo_GL_SwapBuffers = (ptr_VidExt_GL_SwapBuffers) DLSYM(_CoreLibHandle, "VidExt_GL_SwapBuffers"); //****
+	CoreVideo_GL_SetAttribute = (ptr_VidExt_GL_SetAttribute) DLSYM(_CoreLibHandle, "VidExt_GL_SetAttribute");
+	CoreVideo_GL_GetAttribute = (ptr_VidExt_GL_GetAttribute) DLSYM(_CoreLibHandle, "VidExt_GL_GetAttribute");
+	CoreVideo_GL_SwapBuffers = (ptr_VidExt_GL_SwapBuffers) DLSYM(_CoreLibHandle, "VidExt_GL_SwapBuffers");
 
 	return M64ERR_SUCCESS;
 }

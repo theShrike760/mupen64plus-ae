@@ -3,6 +3,8 @@
 namespace opengl {
 
 	bool FunctionWrapper::m_threaded_wrapper = false;
+	bool FunctionWrapper::m_shutdown = false;
+	std::thread FunctionWrapper::m_commandExecutionThread;
 	BlockingQueue<std::shared_ptr<OpenGlCommand>> FunctionWrapper::m_commandQueue;
 
 	void FunctionWrapper::executeCommand(std::shared_ptr<OpenGlCommand> _command)
@@ -15,9 +17,22 @@ namespace opengl {
 		}
 	}
 
-	void FunctionWrapper::setThreadedMode(bool _threadMode)
+	void FunctionWrapper::commandLoop(void)
 	{
-		m_threaded_wrapper = _threadMode;
+		while(!m_shutdown || m_commandQueue.size() != 0)
+		{
+			std::shared_ptr<OpenGlCommand> command;
+			if(m_commandQueue.tryPop(command, std::chrono::milliseconds(10))) {
+				command->performCommand();
+			}
+		}
+	}
+
+	void FunctionWrapper::setThreadedMode(void)
+	{
+		m_threaded_wrapper = true;
+
+		m_commandExecutionThread = std::thread(&FunctionWrapper::commandLoop);
 	}
 
 	void FunctionWrapper::glBlendFunc(GLenum sfactor, GLenum dfactor)
@@ -622,6 +637,12 @@ namespace opengl {
 	void FunctionWrapper::CoreVideo_Quit(void)
 	{
 		executeCommand(std::make_shared<CoreVideoQuitCommand>());
+
+		m_shutdown = true;
+
+		if(m_threaded_wrapper) {
+			m_commandExecutionThread.join();
+		}
 	}
 
 	m64p_error FunctionWrapper::CoreVideo_SetVideoMode(int screenWidth, int screenHeight, int bitsPerPixel, m64p_video_mode mode, m64p_video_flags flags)
