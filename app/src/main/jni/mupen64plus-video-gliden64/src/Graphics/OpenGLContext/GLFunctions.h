@@ -56,6 +56,38 @@ extern PFNGLACTIVETEXTUREPROC g_glActiveTexture;
 extern PFNGLBLENDCOLORPROC g_glBlendColor;
 extern PFNGLREADBUFFERPROC g_glReadBuffer;
 extern PFNGLFINISHPROC g_glFinish;
+#else
+#define g_glBlendFunc glBlendFunc;
+#define g_glPixelStorei glPixelStorei;
+#define g_glClearColor glClearColor;
+#define g_glCullFace glCullFace;
+#define g_glDepthFunc glDepthFunc;
+#define g_glDepthMask glDepthMask;
+#define g_glDisable glDisable;
+#define g_glEnable glEnable;
+#define g_glPolygonOffset glPolygonOffset;
+#define g_glScissor glScissor;
+#define g_glViewport glViewport;
+#define g_glBindTexture glBindTexture;
+#define g_glTexImage2D glTexImage2D;
+#define g_glTexParameteri glTexParameteri;
+#define g_glGetIntegerv glGetIntegerv;
+#define g_glGetString glGetString;
+#define g_glReadPixels glReadPixels;
+#define g_glTexSubImage2D glTexSubImage2D;
+#define g_glDrawArrays glDrawArrays;
+#define g_glGetError glGetError;
+#define g_glDrawElements glDrawElements;
+#define g_glLineWidth glLineWidth;
+#define g_glClear glClear;
+#define g_glGetFloatv glGetFloatv;
+#define g_glDeleteTextures glDeleteTextures;
+#define g_glGenTextures glGenTextures;
+#define g_glTexParameterf glTexParameterf;
+#define g_glActiveTexture glActiveTexture;
+#define g_glBlendColor glBlendColor;
+#define g_glReadBuffer glReadBuffer;
+#define g_glFinish glFinish;
 #endif
 
 #ifdef OS_WINDOWS
