@@ -4,10 +4,8 @@ namespace opengl {
 
 	bool FunctionWrapper::m_threaded_wrapper = false;
 	bool FunctionWrapper::m_shutdown = false;
-	bool FunctionWrapper::m_glInitialized = false;
 	std::thread FunctionWrapper::m_commandExecutionThread;
 	BlockingQueue<std::shared_ptr<OpenGlCommand>> FunctionWrapper::m_commandQueue;
-	BlockingQueue<std::shared_ptr<OpenGlCommand>> FunctionWrapper::m_priorityCommandQueue;
 
 	void FunctionWrapper::executeCommand(std::shared_ptr<OpenGlCommand> _command)
 	{
@@ -22,7 +20,7 @@ namespace opengl {
 	void FunctionWrapper::executePriorityCommand(std::shared_ptr<OpenGlCommand> _command)
 	{
 		if (m_threaded_wrapper) {
-			m_priorityCommandQueue.push(_command);
+			m_commandQueue.pushBack(_command);
 			_command->waitOnCommand();
 		} else {
 			_command->performCommand();
@@ -31,25 +29,11 @@ namespace opengl {
 
 	void FunctionWrapper::commandLoop(void)
 	{
-		while(!m_shutdown || m_commandQueue.size() != 0 || m_priorityCommandQueue.size() != 0)
+		while(!m_shutdown || m_commandQueue.size() != 0)
 		{
 			std::shared_ptr<OpenGlCommand> command;
-			std::shared_ptr<OpenGlCommand> priorityCommand;
-			/*
-			//Take care of all the priority commands before other commands
-			while(m_glInitialized && m_priorityCommandQueue.size() > 0) {
-				priorityCommand = m_priorityCommandQueue.pop();
-				priorityCommand->performCommand();
-			}*/
 
 			if(m_commandQueue.tryPop(command, std::chrono::milliseconds(10))) {
-
-				//Something could had been inserted while we were waiting for a low priority command
-				while(m_glInitialized && m_priorityCommandQueue.size() > 0) {
-					priorityCommand = m_priorityCommandQueue.pop();
-					priorityCommand->performCommand();
-				}
-
 				command->performCommand();
 			}
 		}
@@ -685,7 +669,6 @@ namespace opengl {
 	{
 		m64p_error returnValue;
 		executeCommand(std::make_shared<CoreVideoSetVideoModeCommand>(screenWidth, screenHeight, bitsPerPixel, mode, flags, returnValue));
-		m_glInitialized = true;
 		return returnValue;
 	}
 
