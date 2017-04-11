@@ -72,7 +72,7 @@ void UnbufferedDrawer::drawTriangles(const graphics::Context::DrawTriangleParame
 	}
 
 	if (config.generalEmulation.enableHWLighting != 0)
-		FunctionWrapper::glVertexAttrib1f(triangleAttrib::numlights, GLfloat(_params.vertices[0].HWLight));
+		FunctionWrapper::glVertexAttrib1fNotThreadSafe(triangleAttrib::numlights, GLfloat(_params.vertices[0].HWLight));
 
 	m_cachedAttribArray->enableVertexAttribArray(rectAttrib::position, false);
 	m_cachedAttribArray->enableVertexAttribArray(rectAttrib::texcoord0, false);
@@ -84,21 +84,14 @@ void UnbufferedDrawer::drawTriangles(const graphics::Context::DrawTriangleParame
 	}
 
 	if (config.frameBufferEmulation.N64DepthCompare == 0) {
-		std::unique_ptr<char[]> elementsCopy(new char[_params.elementsCount]);
-		std::copy_n(reinterpret_cast<char*>(_params.elements), _params.elementsCount, elementsCopy.get());
-
-		FunctionWrapper::glDrawElements(GLenum(_params.mode), _params.elementsCount, GL_UNSIGNED_BYTE, std::move(elementsCopy));
+		FunctionWrapper::glDrawElementsNotThreadSafe(GLenum(_params.mode), _params.elementsCount, GL_UNSIGNED_BYTE, _params.elements);
 		return;
 	}
 
 	// Draw polygons one by one
 	for (GLint i = 0; i < _params.elementsCount; i += 3) {
 		FunctionWrapper::glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-		std::unique_ptr<char[]> elementsCopy(new char[3]);
-		std::copy_n(reinterpret_cast<char*>(_params.elements) + i, 3, elementsCopy.get());
-
-		FunctionWrapper::glDrawElements(GLenum(_params.mode), 3, GL_UNSIGNED_BYTE, std::move(elementsCopy));
+		FunctionWrapper::glDrawElementsNotThreadSafe(GLenum(_params.mode), 3, GL_UNSIGNED_BYTE, (u8*)_params.elements + i);
 	}
 }
 

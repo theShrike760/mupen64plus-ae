@@ -162,6 +162,11 @@ namespace opengl {
 #endif
 	}
 
+	void FunctionWrapper::glDrawElementsNotThreadSafe(const GLenum& mode, const GLsizei& count, const GLenum& type, const void *indices)
+	{
+		g_glDrawElements(mode, count, type, indices);
+	}
+
 	void FunctionWrapper::glLineWidth(GLfloat width)
 	{
 		executeCommand(std::make_shared<GlLineWidthCommand>(width));
@@ -348,7 +353,7 @@ namespace opengl {
 	void FunctionWrapper::glVertexAttribPointerNotThreadSafe(GLuint index, GLint size, GLenum type, GLboolean normalized,
 		GLsizei stride, const void *pointer)
 	{
-		executeCommand(std::make_shared<GlVertexAttribPointerNotThreadSafeCommand>(index, size, type, normalized, stride, pointer));
+		g_glVertexAttribPointer(index, size, type, normalized, stride, pointer);
 	}
 
 	void FunctionWrapper::glVertexAttribPointerUnbuffered(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride,
@@ -365,6 +370,11 @@ namespace opengl {
 	void FunctionWrapper::glVertexAttrib1f(GLuint index, GLfloat x)
 	{
 		executeCommand(std::make_shared<GlVertexAttrib1fCommand>(index, x));
+	}
+
+	void FunctionWrapper::glVertexAttrib1fNotThreadSafe(const GLuint& index, const GLfloat& x)
+	{
+		g_glVertexAttrib1f(index, x);
 	}
 
 	void FunctionWrapper::glVertexAttrib4f(GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w)

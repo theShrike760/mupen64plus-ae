@@ -55,8 +55,7 @@ namespace opengl {
 		static void glDrawArrays(GLenum mode, GLint first, GLsizei count);
 		static void glDrawArraysUnbuffered(GLenum mode, GLint first, GLsizei count, std::unique_ptr<std::vector<char>> data);
 		static GLenum glGetError(void);
-		template <class indiceType>
-		static void glDrawElements(GLenum mode, GLsizei count, GLenum type, std::unique_ptr<indiceType[]> indices);
+		static void glDrawElementsNotThreadSafe(const GLenum& mode, const GLsizei& count, const GLenum& type, const void *indices);
 		template <class indiceType>
 		static void glDrawElementsUnbuffered(GLenum mode, GLsizei count, GLenum type, std::unique_ptr<indiceType[]> indices, std::unique_ptr<std::vector<char>> data);
 		static void glLineWidth(GLfloat width);
@@ -101,6 +100,7 @@ namespace opengl {
 		static void glVertexAttribPointerUnbuffered(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, std::size_t offset);
 		static void glBindAttribLocation(GLuint program, GLuint index, const std::string& name);
 		static void glVertexAttrib1f(GLuint index, GLfloat x);
+		static void glVertexAttrib1fNotThreadSafe(const GLuint& index, const GLfloat& x);
 		static void glVertexAttrib4f(GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
 		static void glVertexAttrib4fv(GLuint index, std::unique_ptr<GLfloat[]> v);
 
@@ -193,12 +193,6 @@ namespace opengl {
 	void FunctionWrapper::glTexSubImage2DUnbuffered(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, std::unique_ptr<pixelType[]> pixels)
 	{
 		executeCommand(std::make_shared<GlTexSubImage2DUnbufferedCommand<pixelType>>(target, level, xoffset, yoffset, width, height, format, type, std::move(pixels)));
-	}
-
-	template <class indiceType>
-	void FunctionWrapper::glDrawElements(GLenum mode, GLsizei count, GLenum type, std::unique_ptr<indiceType[]> indices)
-	{
-		executeCommand(std::make_shared<GlDrawElementsCommand<indiceType>>(mode, count, type, std::move(indices)));
 	}
 
 	template <class indiceType>

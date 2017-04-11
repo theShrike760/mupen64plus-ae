@@ -550,26 +550,6 @@ namespace opengl {
 	};
 
 	template <class indiceType>
-	class GlDrawElementsCommand : public OpenGlCommand
-	{
-	public:
-		GlDrawElementsCommand(GLenum mode, GLsizei count, GLenum type, std::unique_ptr<indiceType[]> indices):
-			OpenGlCommand(false, false, "glDrawElements"), m_mode(mode), m_count(count), m_type(type), m_indices(std::move(indices))
-		{
-		}
-
-		void commandToExecute(void) override
-		{
-			g_glDrawElements(m_mode, m_count, m_type, m_indices.get());
-		}
-	private:
-		GLenum m_mode;
-		GLsizei m_count;
-		GLenum m_type;
-		std::unique_ptr<indiceType[]> m_indices;
-	};
-
-	template <class indiceType>
 	class GlDrawElementsUnbufferedCommand : public OpenGlCommand
 	{
 	public:
@@ -1204,29 +1184,6 @@ namespace opengl {
 		GLboolean m_normalized;
 		GLsizei m_stride;
 		std::size_t m_offset;
-	};
-
-	class GlVertexAttribPointerNotThreadSafeCommand : public OpenGlCommand
-	{
-	public:
-		GlVertexAttribPointerNotThreadSafeCommand(GLuint index, GLint size, GLenum type, GLboolean normalized,
-			GLsizei stride, const void *pointer):
-				OpenGlCommand(false, false, "glVertexAttribPointer"), m_index(index), m_size(size), m_type(type), m_normalized(normalized),
-				m_stride(stride), m_pointer(pointer)
-		{
-		}
-
-		void commandToExecute(void) override
-		{
-			g_glVertexAttribPointer(m_index, m_size, m_type, m_normalized, m_stride, m_pointer);
-		}
-	private:
-		GLuint m_index;
-		GLint m_size;
-		GLenum m_type;
-		GLboolean m_normalized;
-		GLsizei m_stride;
-		const void* m_pointer;
 	};
 
 	class GlBindAttribLocationCommand : public OpenGlCommand
