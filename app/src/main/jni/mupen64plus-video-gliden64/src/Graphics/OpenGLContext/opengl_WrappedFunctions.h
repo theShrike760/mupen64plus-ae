@@ -22,7 +22,9 @@ namespace opengl {
 			m_synced(_synced),
 			m_logIfSynced(_logIfSynced),
 			m_executed(false),
-			m_functionName(std::move(_functionName)),
+#ifdef GL_DEBUG
+m_functionName(std::move(_functionName)),
+#endif
 			m_isGlCommand(_isGlCommand)
 		{
 		}
@@ -37,7 +39,9 @@ namespace opengl {
 		std::mutex m_condvarMutex;
 		std::condition_variable m_condition;
 	protected:
-		const std::string m_functionName;
+#ifdef GL_DEBUG
+const std::string m_functionName;
+#endif
 	public:
 		void performCommand(void) {
 			std::unique_lock<std::mutex> lock(m_condvarMutex);
