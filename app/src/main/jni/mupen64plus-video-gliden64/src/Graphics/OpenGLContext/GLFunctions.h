@@ -84,8 +84,10 @@ extern PFNGLFINISHPROC g_glFinish;
 #define g_glDeleteTextures(...) glDeleteTextures(__VA_ARGS__)
 #define g_glGenTextures(...) glGenTextures(__VA_ARGS__)
 #define g_glTexParameterf(...) glTexParameterf(__VA_ARGS__)
+#ifndef OS_WINDOWS
 #define g_glActiveTexture(...) glActiveTexture(__VA_ARGS__)
 #define g_glBlendColor(...) glBlendColor(__VA_ARGS__)
+#endif
 #define g_glReadBuffer(...) glReadBuffer(__VA_ARGS__)
 #define g_glFinish(...) glFinish(__VA_ARGS__)
 #endif
