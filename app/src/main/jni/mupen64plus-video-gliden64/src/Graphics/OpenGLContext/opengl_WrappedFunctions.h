@@ -11,7 +11,11 @@
 #include "opengl_Attributes.h"
 #include <algorithm>
 #include <functional>
+#ifdef MUPENPLUSAPI
 #include <mupenplus/GLideN64_mupenplus.h>
+#else
+#include <Graphics/OpenGLContext/windows/WindowsWGL.h>
+#endif
 
 namespace opengl {
 
@@ -2374,7 +2378,7 @@ const std::string m_functionName;
 			g_glFinish();
 		}
 	};
-
+#ifdef MUPENPLUSAPI
 	//Vid ext functions
 	class CoreVideoInitCommand : public OpenGlCommand
 	{
@@ -2477,4 +2481,51 @@ const std::string m_functionName;
 
 		std::function<void(void)> m_swapBuffersCallback;
 	};
+#else
+	//Zilmar API functions
+	class WindowsStartCommand : public OpenGlCommand
+	{
+	public:
+		WindowsStartCommand(bool& returnValue) :
+			OpenGlCommand(true, false, "WindowsStartCommand", false), m_returnValue(returnValue)
+		{
+		}
+
+		void commandToExecute(void) override
+		{
+			m_returnValue = WindowsWGL::start();
+		}
+
+		bool& m_returnValue;
+	};
+
+	class WindowsStopCommand : public OpenGlCommand
+	{
+	public:
+		WindowsStopCommand(void) :
+			OpenGlCommand(true, false, "WindowsStopCommand", false)
+		{
+		}
+
+		void commandToExecute(void) override
+		{
+			WindowsWGL::stop();
+		}
+	};
+
+	class WindowsSwapBuffersCommand : public OpenGlCommand
+	{
+	public:
+		WindowsSwapBuffersCommand(void) :
+			OpenGlCommand(false, false, "WindowsSwapBuffersCommand", false)
+		{
+		}
+
+		void commandToExecute(void) override
+		{
+			WindowsWGL::swapBuffers();
+		}
+	};
+
+#endif
 }

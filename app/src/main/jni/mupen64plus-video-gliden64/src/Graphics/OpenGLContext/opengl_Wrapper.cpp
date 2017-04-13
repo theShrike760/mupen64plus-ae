@@ -670,6 +670,8 @@ namespace opengl {
 		executeCommand(std::make_shared<GlFinishCommand>());
 	}
 
+#ifdef MUPENPLUSAPI
+
 	void FunctionWrapper::CoreVideo_Init(void)
 	{
 		executeCommand(std::make_shared<CoreVideoInitCommand>());
@@ -708,7 +710,32 @@ namespace opengl {
 		++m_swapBuffersQueued;
 		executeCommand(std::make_shared<CoreVideoGLSwapBuffersCommand>([]{ReduceSwapBuffersQueued();}));
 	}
+#else
+	bool FunctionWrapper::windowsStart(void)
+	{
+		bool returnValue;
+		executeCommand(std::make_shared<WindowsStartCommand>(returnValue));
+		return returnValue;
+	}
 
+	void FunctionWrapper::windowsStop(void)
+	{
+		executeCommand(std::make_shared<WindowsStopCommand>());
+
+		m_shutdown = true;
+
+		if (m_threaded_wrapper) {
+			m_commandExecutionThread.join();
+		}
+	}
+
+	void FunctionWrapper::windowsSwapBuffers(void)
+	{
+		++m_swapBuffersQueued;
+		executeCommand(std::make_shared<WindowsSwapBuffersCommand>());
+	}
+
+#endif
 	void FunctionWrapper::ReduceSwapBuffersQueued(void)
 	{
 		--m_swapBuffersQueued;

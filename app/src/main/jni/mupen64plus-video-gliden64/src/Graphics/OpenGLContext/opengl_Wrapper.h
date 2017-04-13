@@ -3,8 +3,11 @@
 #include "GLFunctions.h"
 #include "BlockingQueue.h"
 #include "opengl_WrappedFunctions.h"
-#include <mupenplus/GLideN64_mupenplus.h>
 #include <thread>
+
+#ifdef MUPENPLUSAPI
+#include <mupenplus/GLideN64_mupenplus.h>
+#endif
 
 namespace opengl {
 
@@ -172,6 +175,7 @@ namespace opengl {
 		static void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length);
 		static void glFinish(void);
 
+#ifdef MUPENPLUSAPI
 		//Vid_ext functions
 		static void CoreVideo_Init(void);
 		static void CoreVideo_Quit(void);
@@ -179,6 +183,13 @@ namespace opengl {
 		static void CoreVideo_GL_SetAttribute(m64p_GLattr attribute, int value);
 		static void CoreVideo_GL_GetAttribute(m64p_GLattr attribute, int *value);
 		static void CoreVideo_GL_SwapBuffers(void);
+#else
+		//Windows GL context functions
+		static bool windowsStart(void);
+		static void windowsStop(void);
+		static void windowsSwapBuffers(void);
+#endif
+	
 		static void ReduceSwapBuffersQueued(void);
 		static void WaitForSwapBuffersQueued(void);
 	};
