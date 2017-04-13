@@ -512,6 +512,11 @@ namespace opengl {
 		return returnValue;
 	}
 
+	void FunctionWrapper::glMapBufferRangeWriteAsync(GLenum target, GLuint buffer, GLintptr offset, u32 length, GLbitfield access, std::unique_ptr<u8[]> data)
+	{
+		executeCommand(std::make_shared<GlMapBufferRangeWriteAsyncCommand>(target, buffer, offset, length, access, std::move(data)));
+	}
+
 	GLboolean FunctionWrapper::glUnmapBuffer(GLenum target)
 	{
 		GLboolean returnValue;

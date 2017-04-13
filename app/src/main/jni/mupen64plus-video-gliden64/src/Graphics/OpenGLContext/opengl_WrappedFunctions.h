@@ -654,7 +654,7 @@ const std::string m_functionName;
 	{
 	public:
 		GlGenTexturesCommand(GLsizei n, GLuint *textures):
-			OpenGlCommand(true, true, "glGenTextures"), m_n(n), m_textures(textures)
+			OpenGlCommand(true, false, "glGenTextures"), m_n(n), m_textures(textures)
 		{
 		}
 
@@ -1690,7 +1690,6 @@ const std::string m_functionName;
 		GLenum m_access;
 	};
 
-	//TODO: Make this async
 	class GlMapBufferRangeCommand : public OpenGlCommand
 	{
 	public:
@@ -1713,11 +1712,37 @@ const std::string m_functionName;
 		GLubyte*& m_returnValue;
 	};
 
+	class GlMapBufferRangeWriteAsyncCommand : public OpenGlCommand
+	{
+	public:
+		GlMapBufferRangeWriteAsyncCommand(GLenum target, GLuint buffer, GLintptr offset, u32 length,
+			GLbitfield access, std::unique_ptr<u8[]> data):
+			OpenGlCommand(false, false, "GlMapBufferRangeWriteAsyncCommand"), m_target(target), m_buffer(buffer),
+			m_offset(offset), m_length(length), m_access(access), m_data(std::move(data))
+		{
+		}
+
+		void commandToExecute(void) override
+		{
+			g_glBindBuffer(m_target, m_buffer);
+			void* buffer_pointer = g_glMapBufferRange(m_target, m_offset, m_length, m_access);
+			memcpy(buffer_pointer, m_data.get(), m_length);
+			g_glUnmapBuffer(m_target);
+		}
+	private:
+		GLenum m_target;
+		GLuint m_buffer;
+		GLintptr m_offset;
+		u32 m_length;
+		GLbitfield m_access;
+		std::unique_ptr<u8[]> m_data;
+	};
+
 	class GlUnmapBufferCommand : public OpenGlCommand
 	{
 	public:
 		GlUnmapBufferCommand(GLenum target, GLboolean& returnValue):
-			OpenGlCommand(true, true, "glUnmapBuffer"), m_target(target), m_returnValue(returnValue)
+			OpenGlCommand(false, false, "glUnmapBuffer"), m_target(target), m_returnValue(returnValue)
 		{
 		}
 

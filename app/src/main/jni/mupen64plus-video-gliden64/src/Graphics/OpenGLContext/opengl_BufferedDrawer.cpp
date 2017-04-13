@@ -100,10 +100,9 @@ void BufferedDrawer::_updateBuffer(Buffer & _buffer, u32 _count, u32 _dataSize, 
 		glFlushMappedBufferRange(_buffer.type, _buffer.offset, _dataSize);
 #endif
 	} else {
-		m_bindBuffer->bind(Parameter(_buffer.type), ObjectHandle(_buffer.handle));
-		void* buffer_pointer = FunctionWrapper::glMapBufferRange(_buffer.type, _buffer.offset, _dataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-		memcpy(buffer_pointer, _data, _dataSize);
-		FunctionWrapper::glUnmapBuffer(_buffer.type);
+		std::unique_ptr<u8[]> data((new u8[_dataSize]));
+		std::copy_n(reinterpret_cast<const u8*>(_data), _dataSize, data.get());
+		FunctionWrapper::glMapBufferRangeWriteAsync(_buffer.type, _buffer.handle, _buffer.offset, _dataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT, std::move(data));
 	}
 
 	_buffer.offset += _dataSize;
