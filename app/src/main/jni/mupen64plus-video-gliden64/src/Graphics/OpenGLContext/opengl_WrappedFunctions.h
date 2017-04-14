@@ -11,6 +11,9 @@
 #include "opengl_Attributes.h"
 #include <algorithm>
 #include <functional>
+#include <unordered_map>
+
+
 #ifdef MUPENPLUSAPI
 #include <mupenplus/GLideN64_mupenplus.h>
 #else
@@ -393,11 +396,11 @@ const std::string m_functionName;
 		void* m_pixels;
 	};
 
-	class GlReadPixelsAyncCommand : public OpenGlCommand
+	class GlReadPixelsAsyncCommand : public OpenGlCommand
 	{
 	public:
-		GlReadPixelsAyncCommand(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type):
-			OpenGlCommand(false, false, "glReadPixels"), m_x(x), m_y(y), m_width(width), m_height(height), m_format(format), m_type(type)
+		GlReadPixelsAsyncCommand(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type):
+			OpenGlCommand(false, false, "GlReadPixelsAync"), m_x(x), m_y(y), m_width(width), m_height(height), m_format(format), m_type(type)
 		{
 		}
 
@@ -1738,11 +1741,55 @@ const std::string m_functionName;
 		std::unique_ptr<u8[]> m_data;
 	};
 
+	class GlMapBufferRangeReadAsyncCommand : public OpenGlCommand
+	{
+	public:
+		GlMapBufferRangeReadAsyncCommand(GLenum target, GLuint buffer, GLintptr offset, u32 length,
+				GLbitfield access):
+				OpenGlCommand(false, false, "GlMapBufferRangeReadAsyncCommand"), m_target(target), m_buffer(buffer),
+				m_offset(offset), m_length(length), m_access(access)
+		{
+			std::unique_lock<std::mutex> lock(m_mapMutex);
+
+			if(m_sizes[m_buffer] != m_length)
+			{
+				LOG(LOG_ERROR, "Buffer index=%d, SIZE=%d", m_buffer, m_length);
+				m_sizes[m_buffer] = m_length;
+				m_data[m_buffer] = std::unique_ptr<u8[]>(new u8[m_length]);
+			}
+		}
+
+		void commandToExecute(void) override
+		{
+			g_glBindBuffer(m_target, m_buffer);
+			void* buffer_pointer = g_glMapBufferRange(m_target, m_offset, m_length, m_access);
+
+			std::unique_lock<std::mutex> lock(m_mapMutex);
+			std::unique_ptr<u8[]>& data = m_data[m_buffer];
+			memcpy(data.get(), buffer_pointer, m_length);
+		}
+
+		static void* getData(GLuint buffer)
+		{
+			std::unique_lock<std::mutex> lock(m_mapMutex);
+			return m_data[buffer].get();
+		}
+	private:
+		GLenum m_target;
+		GLuint m_buffer;
+		GLintptr m_offset;
+		u32 m_length;
+		GLbitfield m_access;
+		static std::unordered_map<int, std::unique_ptr<u8[]>> m_data;
+		static std::unordered_map<int, int> m_sizes;
+		static std::mutex m_mapMutex;
+	};
+
 	class GlUnmapBufferCommand : public OpenGlCommand
 	{
 	public:
 		GlUnmapBufferCommand(GLenum target, GLboolean& returnValue):
-			OpenGlCommand(false, false, "glUnmapBuffer"), m_target(target), m_returnValue(returnValue)
+			OpenGlCommand(true, true, "glUnmapBuffer"), m_target(target), m_returnValue(returnValue)
 		{
 		}
 
@@ -1753,6 +1800,22 @@ const std::string m_functionName;
 	private:
 		GLenum m_target;
 		GLboolean& m_returnValue;
+	};
+
+	class GlUnmapBufferAsyncCommand : public OpenGlCommand
+	{
+	public:
+		GlUnmapBufferAsyncCommand(GLenum target):
+				OpenGlCommand(false, false, "glUnmapBuffer"), m_target(target)
+		{
+		}
+
+		void commandToExecute(void) override
+		{
+			g_glUnmapBuffer(m_target);
+		}
+	private:
+		GLenum m_target;
 	};
 
 	class GlDeleteBuffersCommand : public OpenGlCommand

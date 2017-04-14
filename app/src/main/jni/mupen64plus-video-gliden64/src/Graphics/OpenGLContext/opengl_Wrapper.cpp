@@ -134,7 +134,7 @@ namespace opengl {
 
 	void FunctionWrapper::glReadPixelsAsync(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type)
 	{
-		executeCommand(std::make_shared<GlReadPixelsAyncCommand>(x, y, width, height, format, type));
+		executeCommand(std::make_shared<GlReadPixelsAsyncCommand>(x, y, width, height, format, type));
 	}
 
 	void FunctionWrapper::glTexSubImage2DBuffered(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, std::size_t offset)
@@ -517,11 +517,22 @@ namespace opengl {
 		executeCommand(std::make_shared<GlMapBufferRangeWriteAsyncCommand>(target, buffer, offset, length, access, std::move(data)));
 	}
 
+	void* FunctionWrapper::glMapBufferRangeReadAsync(GLenum target, GLuint buffer, GLintptr offset, u32 length, GLbitfield access)
+	{
+		executeCommand(std::make_shared<GlMapBufferRangeReadAsyncCommand>(target, buffer, offset, length, access));
+		return GlMapBufferRangeReadAsyncCommand::getData(buffer);
+	}
+
 	GLboolean FunctionWrapper::glUnmapBuffer(GLenum target)
 	{
 		GLboolean returnValue;
 		executeCommand(std::make_shared<GlUnmapBufferCommand>(target, returnValue));
 		return returnValue;
+	}
+
+	void FunctionWrapper::glUnmapBufferAsync(GLenum target)
+	{
+		executeCommand(std::make_shared<GlUnmapBufferAsyncCommand>(target));
 	}
 
 	void FunctionWrapper::glDeleteBuffers(GLsizei n, std::unique_ptr<GLuint[]> buffers)
