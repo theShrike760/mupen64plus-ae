@@ -700,6 +700,7 @@ namespace opengl {
 		m_shutdown = true;
 
 		if(m_threaded_wrapper) {
+			m_condition.notify_all();
 			m_commandExecutionThread.join();
 		}
 	}
@@ -741,6 +742,7 @@ namespace opengl {
 		m_shutdown = true;
 
 		if (m_threaded_wrapper) {
+			m_condition.notify_all();
 			m_commandExecutionThread.join();
 		}
 	}
