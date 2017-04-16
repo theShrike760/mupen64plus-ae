@@ -2604,15 +2604,18 @@ const std::string m_functionName;
 	class WindowsSwapBuffersCommand : public OpenGlCommand
 	{
 	public:
-		WindowsSwapBuffersCommand(void) :
-			OpenGlCommand(false, false, "WindowsSwapBuffersCommand", false)
+		WindowsSwapBuffersCommand(std::function<void(void)> swapBuffersCallback) :
+			OpenGlCommand(false, false, "WindowsSwapBuffersCommand", false), m_swapBuffersCallback(swapBuffersCallback)
 		{
 		}
 
 		void commandToExecute(void) override
 		{
 			WindowsWGL::swapBuffers();
+			m_swapBuffersCallback();
 		}
+	private:
+		std::function<void(void)> m_swapBuffersCallback;
 	};
 
 #endif

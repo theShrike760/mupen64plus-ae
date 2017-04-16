@@ -750,7 +750,7 @@ namespace opengl {
 	void FunctionWrapper::windowsSwapBuffers(void)
 	{
 		++m_swapBuffersQueued;
-		executeCommand(std::make_shared<WindowsSwapBuffersCommand>());
+		executeCommand(std::make_shared<WindowsSwapBuffersCommand>([]{ReduceSwapBuffersQueued();}));
 	}
 
 #endif
