@@ -16,6 +16,8 @@
 #include "Config.h"
 #include "TextureFilterHandler.h"
 #include "DisplayWindow.h"
+#include "FrameSkipManager.h"
+#include "Log.h"
 
 using namespace std;
 
@@ -35,6 +37,20 @@ void RSP_CheckDLCounter()
 
 void RSP_ProcessDList()
 {
+
+	static int count = 0;
+	++count;
+
+	if (frameSkipManager.willSkipNext())
+	//if (count%2 == 0)
+	{
+		LOG(LOG_ERROR, "SKIPPING FRAME");
+		// Set an interrupt to allow the game to continue
+		*REG.MI_INTR |= MI_INTR_DP;
+		CheckInterrupts();
+		return;
+	}
+
 	if (ConfigOpen || dwnd().isResizeWindow()) {
 		*REG.MI_INTR |= MI_INTR_DP;
 		CheckInterrupts();
@@ -124,6 +140,7 @@ void RSP_ProcessDList()
 
 	RSP.busy = FALSE;
 	gDP.changed |= CHANGED_COLORBUFFER;
+	RSP.bUpdateScreen = true;
 }
 
 static
@@ -198,6 +215,7 @@ void RSP_Init()
 
 	RSP.uc_start = RSP.uc_dstart = 0;
 	RSP.bLLE = false;
+	RSP.bUpdateScreen = false;
 
 	// get the name of the ROM
 	char romname[21];

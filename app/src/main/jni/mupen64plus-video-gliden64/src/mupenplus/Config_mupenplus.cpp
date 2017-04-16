@@ -9,7 +9,9 @@
 #include "../GLideN64.h"
 #include "../GBI.h"
 #include "../RSP.h"
+#include "../VI.h"
 #include "../Log.h"
+#include "../FrameSkipManager.h"
 
 Config config;
 
@@ -300,4 +302,6 @@ void Config_LoadConfig()
 	config.onScreenDisplay.pos = ConfigGetParamInt(g_configVideoGliden64, "CountersPos");
 
 	config.generalEmulation.hacks = hacks;
+
+	frameSkipManager.setTargetFPS(VI.PAL ? 50 : 60);
 }

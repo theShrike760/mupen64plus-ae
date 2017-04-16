@@ -13,6 +13,7 @@
 #include "Performance.h"
 #include "Debug.h"
 #include "DisplayWindow.h"
+#include "FrameSkipManager.h"
 #include <Graphics/Context.h>
 
 using namespace std;
@@ -101,6 +102,8 @@ void VI_UpdateSize()
 
 void VI_UpdateScreen()
 {
+	frameSkipManager.update();
+
 	if (VI.lastOrigin == -1) // Workaround for Mupen64Plus issue with initialization
 		gfxContext.isError();
 
@@ -149,7 +152,7 @@ void VI_UpdateScreen()
 			break;
 		}
 
-		if (bNeedSwap) {
+		if (bNeedSwap && RSP.bUpdateScreen) {
 			if (bCFB) {
 				if (pBuffer == nullptr || pBuffer->m_width != VI.width) {
 					if (!bVIUpdated) {
@@ -173,7 +176,8 @@ void VI_UpdateScreen()
 			frameBufferList().renderBuffer();
 			frameBufferList().clearBuffersChanged();
 			VI.lastOrigin = *REG.VI_ORIGIN;
-		} 
+			RSP.bUpdateScreen = false;
+		}
 	} else {
 		if (gDP.changed & CHANGED_COLORBUFFER) {
 			frameBufferList().renderBuffer();
