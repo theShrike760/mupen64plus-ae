@@ -20,7 +20,13 @@ ColorBufferReaderWithPixelBuffer::~ColorBufferReaderWithPixelBuffer()
 
 void ColorBufferReaderWithPixelBuffer::_destroyBuffers()
 {
-	FunctionWrapper::glDeleteBuffers(_numPBO, m_PBO);
+	auto buffers = std::unique_ptr<GLuint[]>(new GLuint[_numPBO]);
+
+	for(unsigned int index = 0; index < _numPBO; ++index) {
+		buffers[index] = m_PBO[index];
+	}
+
+	FunctionWrapper::glDeleteBuffers(_numPBO, std::move(buffers));
 
 	for(int index = 0; index < _numPBO; ++index)
 		m_PBO[index] = 0;
