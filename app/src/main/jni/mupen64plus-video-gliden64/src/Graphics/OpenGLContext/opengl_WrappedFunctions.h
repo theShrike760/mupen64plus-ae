@@ -24,32 +24,6 @@ namespace opengl {
 
 	class OpenGlCommand
 	{
-	protected:
-		OpenGlCommand (const bool& _synced, const bool& _logIfSynced, const std::string& _functionName,
-			const bool& _isGlCommand = true):
-			m_synced(_synced),
-			m_executed(false)
-#ifdef GL_DEBUG
-			m_logIfSynced(_logIfSynced),
-			m_functionName(std::move(_functionName)),
-			m_isGlCommand(_isGlCommand)
-#endif
-		{
-		}
-
-		virtual void commandToExecute(void) = 0;
-
-	private:
-		std::atomic<bool> m_synced;
-		bool m_executed;
-		std::mutex m_condvarMutex;
-		std::condition_variable m_condition;
-	protected:
-#ifdef GL_DEBUG
-		const bool m_logIfSynced;
-		const std::string m_functionName;
-		const bool m_isGlCommand;
-#endif
 	public:
 		void performCommandSingleThreaded(void)
 		{
@@ -57,6 +31,10 @@ namespace opengl {
 #ifdef GL_DEBUG
 			if(m_isGlCommand)
 			{
+				std::stringstream errorString;
+				errorString << " Executing : " << m_functionName;
+				LOG(LOG_ERROR, errorString.str().c_str());
+
 				auto error = g_glGetError();
 				if (error != GL_NO_ERROR) {
 					std::stringstream errorString;
@@ -74,7 +52,7 @@ namespace opengl {
 			if (m_synced)
 			{
 #ifdef GL_DEBUG
-				if (m_logIfSynced) { 
+				if (m_logIfSynced) {
 					std::stringstream errorString;
 					errorString << " Executing synced: " << m_functionName;
 					LOG(LOG_ERROR, errorString.str().c_str());
@@ -92,12 +70,40 @@ namespace opengl {
 				m_condition.wait(lock, [this]{return m_executed;});
 			}
 		}
+
+	protected:
+		OpenGlCommand (const bool& _synced, const bool& _logIfSynced, const std::string& _functionName,
+			const bool& _isGlCommand = true):
+			m_synced(_synced)
+			, m_executed(false)
+#ifdef GL_DEBUG
+			, m_logIfSynced(_logIfSynced)
+			, m_functionName(std::move(_functionName))
+			, m_isGlCommand(_isGlCommand)
+#endif
+		{
+		}
+
+		virtual void commandToExecute(void) = 0;
+
+	protected:
+#ifdef GL_DEBUG
+		const bool m_logIfSynced;
+		const std::string m_functionName;
+		const bool m_isGlCommand;
+#endif
+
+	private:
+		std::atomic<bool> m_synced;
+		bool m_executed;
+		std::mutex m_condvarMutex;
+		std::condition_variable m_condition;
 	};
 
 	class GlBlendFuncCommand : public OpenGlCommand
 	{
 	public:
-		GlBlendFuncCommand(GLenum sfactor, GLenum dfactor):
+		GlBlendFuncCommand(const GLenum& sfactor, const GLenum& dfactor):
 			OpenGlCommand(false, false, "glBlendFunc"), m_sfactor(sfactor), m_dfactor(dfactor)
 		{
 		}
@@ -114,7 +120,7 @@ namespace opengl {
 	class GlPixelStoreiCommand : public OpenGlCommand
 	{
 	public:
-		GlPixelStoreiCommand(GLenum pname, GLint param):
+		GlPixelStoreiCommand(const GLenum& pname, const GLint& param):
 			OpenGlCommand(false, false, "glPixelStorei"), m_pname(pname), m_param(param)
 		{
 		}
@@ -131,7 +137,7 @@ namespace opengl {
 	class GlClearColorCommand : public OpenGlCommand
 	{
 	public:
-		GlClearColorCommand(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha):
+		GlClearColorCommand(const GLfloat& red, const GLfloat& green, const GLfloat& blue, const GLfloat& alpha):
 			OpenGlCommand(false, false, "glClearColor"), m_red(red), m_green(green), m_blue(blue), m_alpha(alpha)
 		{
 		}
@@ -150,7 +156,7 @@ namespace opengl {
 	class GlCullFaceCommand : public OpenGlCommand
 	{
 	public:
-		GlCullFaceCommand(GLenum mode):
+		GlCullFaceCommand(const GLenum& mode):
 			OpenGlCommand(false, false, "glCullFace"), m_mode(mode)
 		{
 		}
@@ -166,7 +172,7 @@ namespace opengl {
 	class GlDepthFuncCommand : public OpenGlCommand
 	{
 	public:
-		GlDepthFuncCommand(GLenum func):
+		GlDepthFuncCommand(const GLenum& func):
 			OpenGlCommand(false, false, "glDepthFunc"), m_func(func)
 		{
 		}
@@ -182,7 +188,7 @@ namespace opengl {
 	class GlDepthMaskCommand : public OpenGlCommand
 	{
 	public:
-		GlDepthMaskCommand(GLboolean flag):
+		GlDepthMaskCommand(const GLboolean& flag):
 			OpenGlCommand(false, false, "glDepthMask"), m_flag(flag)
 		{
 		}
@@ -198,7 +204,7 @@ namespace opengl {
 	class GlDisableCommand : public OpenGlCommand
 	{
 	public:
-		GlDisableCommand(GLenum cap):
+		GlDisableCommand(const GLenum& cap):
 			OpenGlCommand(false, false, "glDisable"), m_cap(cap)
 		{
 		}
@@ -214,7 +220,7 @@ namespace opengl {
 	class GlEnableCommand : public OpenGlCommand
 	{
 	public:
-		GlEnableCommand(GLenum cap):
+		GlEnableCommand(const GLenum& cap):
 			OpenGlCommand(false, false, "glEnable"), m_cap(cap)
 		{
 		}
@@ -230,7 +236,7 @@ namespace opengl {
 	class GlPolygonOffsetCommand : public OpenGlCommand
 	{
 	public:
-		GlPolygonOffsetCommand(GLfloat factor, GLfloat units):
+		GlPolygonOffsetCommand(const GLfloat& factor, const GLfloat& units):
 			OpenGlCommand(false, false, "glPolygonOffset"), m_factor(factor), m_units(units)
 		{
 		}
@@ -247,7 +253,7 @@ namespace opengl {
 	class GlScissorCommand : public OpenGlCommand
 	{
 	public:
-		GlScissorCommand(GLint x, GLint y, GLsizei width, GLsizei height):
+		GlScissorCommand(const GLint& x, const GLint& y, const GLsizei& width, const GLsizei& height):
 			OpenGlCommand(false, false, "glScissor"), m_x(x), m_y(y), m_width(width), m_height(height)
 		{
 		}
@@ -266,7 +272,7 @@ namespace opengl {
 	class GlViewportCommand : public OpenGlCommand
 	{
 	public:
-		GlViewportCommand(GLint x, GLint y, GLsizei width, GLsizei height):
+		GlViewportCommand(const GLint& x, const GLint& y, const GLsizei& width, const GLsizei& height):
 				OpenGlCommand(false, false, "glViewport"), m_x(x), m_y(y), m_width(width), m_height(height)
 		{
 		}
@@ -303,8 +309,8 @@ namespace opengl {
 	class GlTexImage2DCommand : public OpenGlCommand
 	{
 	public:
-		GlTexImage2DCommand(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height,
-			GLint border, GLenum format, GLenum type, std::unique_ptr<pixelType[]> pixels):
+		GlTexImage2DCommand(const GLenum& target, const GLint& level, const GLint& internalformat, const GLsizei& width, const GLsizei& height,
+			GLint border, const GLenum& format, const GLenum& type, std::unique_ptr<pixelType[]> pixels):
 			OpenGlCommand(false, false, "glTexImage2D"), m_target(target), m_level(level), m_internalformat(internalformat),
 			m_width(width), m_height(height), m_border(border), m_format(format), m_type(type),
 			m_pixels(std::move(pixels))
@@ -331,7 +337,7 @@ namespace opengl {
 	class GlTexParameteriCommand : public OpenGlCommand
 	{
 	public:
-		GlTexParameteriCommand(GLenum target, GLenum pname, GLint param):
+		GlTexParameteriCommand(const GLenum& target, const GLenum& pname, const GLint& param):
 			OpenGlCommand(false, false, "glTexParameteri"), m_target(target), m_pname(pname), m_param(param)
 		{
 		}
@@ -349,7 +355,7 @@ namespace opengl {
 	class GlGetIntegervCommand : public OpenGlCommand
 	{
 	public:
-		GlGetIntegervCommand(GLenum pname, GLint *data):
+		GlGetIntegervCommand(const GLenum& pname, GLint* data):
 			OpenGlCommand(true, false, "glGetIntegerv"), m_pname(pname), m_data(data)
 		{
 		}
@@ -366,7 +372,7 @@ namespace opengl {
 	class GlGetStringCommand : public OpenGlCommand
 	{
 	public:
-		GlGetStringCommand(GLenum name, const GLubyte*& returnValue):
+		GlGetStringCommand(const GLenum& name, const GLubyte*& returnValue):
 			OpenGlCommand(true, false, "glGetString"), m_name(name), m_returnValue(returnValue)
 		{
 		}
@@ -383,7 +389,7 @@ namespace opengl {
 	class GlReadPixelsCommand : public OpenGlCommand
 	{
 	public:
-		GlReadPixelsCommand(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void *pixels):
+		GlReadPixelsCommand(const GLint& x, const GLint& y, const GLsizei& width, const GLsizei& height, const GLenum& format, const GLenum& type, void* pixels):
 			OpenGlCommand(true, true, "glReadPixels"), m_x(x), m_y(y), m_width(width), m_height(height), m_format(format), m_type(type), m_pixels(pixels)
 		{
 		}
@@ -405,7 +411,7 @@ namespace opengl {
 	class GlReadPixelsAsyncCommand : public OpenGlCommand
 	{
 	public:
-		GlReadPixelsAsyncCommand(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type):
+		GlReadPixelsAsyncCommand(const GLint& x, const GLint& y, const GLsizei& width, const GLsizei& height, const GLenum& format, const GLenum& type):
 			OpenGlCommand(false, false, "GlReadPixelsAync"), m_x(x), m_y(y), m_width(width), m_height(height), m_format(format), m_type(type)
 		{
 		}
@@ -427,8 +433,8 @@ namespace opengl {
 	class GlTexSubImage2DUnbufferedCommand : public OpenGlCommand
 	{
 	public:
-		GlTexSubImage2DUnbufferedCommand(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height,
-			GLenum format, GLenum type, std::unique_ptr<pixelType[]> pixels):
+		GlTexSubImage2DUnbufferedCommand(const GLenum& target, const GLint& level, const GLint& xoffset, const GLint& yoffset, const GLsizei& width, const GLsizei& height,
+			GLenum format, const GLenum& type, std::unique_ptr<pixelType[]> pixels):
 			OpenGlCommand(false, false, "glTexSubImage2D"), m_target(target), m_level(level), m_xoffset(xoffset), m_yoffset(yoffset),
 			m_width(width), m_height(height), m_format(format), m_type(type), m_pixels(std::move(pixels))
 		{
@@ -453,8 +459,8 @@ namespace opengl {
 	class GlTexSubImage2DBufferedCommand : public OpenGlCommand
 	{
 	public:
-		GlTexSubImage2DBufferedCommand(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height,
-										 GLenum format, GLenum type, std::size_t offset):
+		GlTexSubImage2DBufferedCommand(const GLenum& target, const GLint& level, const GLint& xoffset, const GLint& yoffset, const GLsizei& width, const GLsizei& height,
+										 GLenum format, const GLenum& type, std::size_t offset):
 				OpenGlCommand(false, false, "glTexSubImage2D"), m_target(target), m_level(level), m_xoffset(xoffset), m_yoffset(yoffset),
 				m_width(width), m_height(height), m_format(format), m_type(type), m_offset(offset)
 		{
@@ -479,7 +485,7 @@ namespace opengl {
 	class GlDrawArraysCommand : public OpenGlCommand
 	{
 	public:
-		GlDrawArraysCommand(GLenum mode, GLint first, GLsizei count):
+		GlDrawArraysCommand(const GLenum& mode, const GLint& first, const GLsizei& count):
 			OpenGlCommand(false, false, "glDrawArrays"), m_mode(mode), m_first(first), m_count(count)
 		{
 		}
@@ -496,7 +502,7 @@ namespace opengl {
 	class GlVertexAttribPointerUnbufferedCommand : public OpenGlCommand
 	{
 	public:
-		GlVertexAttribPointerUnbufferedCommand(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride,
+		GlVertexAttribPointerUnbufferedCommand(const GLuint& index, const GLint& size, const GLenum& type, const GLboolean& normalized, const GLsizei& stride,
 			std::size_t offset):
 			OpenGlCommand(false, false, "glVertexAttribPointer"), m_index(index), m_size(size), m_type(type), m_normalized(normalized),
 			m_stride(stride), m_offset(offset)
@@ -531,7 +537,7 @@ namespace opengl {
 	class GlDrawArraysUnbufferedCommand : public OpenGlCommand
 	{
 	public:
-		GlDrawArraysUnbufferedCommand(GLenum mode, GLint first, GLsizei count, std::unique_ptr<std::vector<char>> data):
+		GlDrawArraysUnbufferedCommand(const GLenum& mode, const GLint& first, const GLsizei& count, std::unique_ptr<std::vector<char>> data):
 			OpenGlCommand(false, false, "glDrawArrays"), m_mode(mode), m_first(first), m_count(count),
 			m_data(std::move(data))
 		{
@@ -570,7 +576,7 @@ namespace opengl {
 	class GlDrawElementsUnbufferedCommand : public OpenGlCommand
 	{
 	public:
-		GlDrawElementsUnbufferedCommand(GLenum mode, GLsizei count, GLenum type, std::unique_ptr<indiceType[]> indices,
+		GlDrawElementsUnbufferedCommand(const GLenum& mode, const GLsizei& count, const GLenum& type, std::unique_ptr<indiceType[]> indices,
 				std::unique_ptr<std::vector<char>> data):
 				OpenGlCommand(false, false, "glDrawElementsUnbuffered"), m_mode(mode), m_count(count), m_type(type),
 				m_indices(std::move(indices)), m_data(std::move(data))
@@ -596,7 +602,7 @@ namespace opengl {
 	class GlLineWidthCommand : public OpenGlCommand
 	{
 	public:
-		GlLineWidthCommand(GLfloat width):
+		GlLineWidthCommand(const GLfloat& width):
 			OpenGlCommand(false, false, "glLineWidth"), m_width(width)
 		{
 		}
@@ -612,7 +618,7 @@ namespace opengl {
 	class GlClearCommand : public OpenGlCommand
 	{
 	public:
-		GlClearCommand(GLbitfield mask):
+		GlClearCommand(const GLbitfield& mask):
 			OpenGlCommand(false, false, "glClear"), m_mask(mask)
 		{
 		}
@@ -628,7 +634,7 @@ namespace opengl {
 	class GlGetFloatvCommand : public OpenGlCommand
 	{
 	public:
-		GlGetFloatvCommand(GLenum pname, GLfloat *data):
+		GlGetFloatvCommand(const GLenum& pname, GLfloat* data):
 			OpenGlCommand(true, false, "glGetFloatv"), m_pname(pname), m_data(data)
 		{
 		}
@@ -645,7 +651,7 @@ namespace opengl {
 	class GlDeleteTexturesCommand : public OpenGlCommand
 	{
 	public:
-		GlDeleteTexturesCommand(GLsizei n, std::unique_ptr<GLuint[]> textures):
+		GlDeleteTexturesCommand(const GLsizei& n, std::unique_ptr<GLuint[]> textures):
 			OpenGlCommand(false, false, "glDeleteTextures"), m_n(n), m_textures(std::move(textures))
 		{
 		}
@@ -662,7 +668,7 @@ namespace opengl {
 	class GlGenTexturesCommand : public OpenGlCommand
 	{
 	public:
-		GlGenTexturesCommand(GLsizei n, GLuint *textures):
+		GlGenTexturesCommand(const GLsizei& n, GLuint* textures):
 			OpenGlCommand(true, false, "glGenTextures"), m_n(n), m_textures(textures)
 		{
 		}
@@ -679,7 +685,7 @@ namespace opengl {
 	class GlTexParameterfCommand : public OpenGlCommand
 	{
 	public:
-		GlTexParameterfCommand(GLenum target, GLenum pname, GLfloat param):
+		GlTexParameterfCommand(const GLenum& target, const GLenum& pname, const GLfloat& param):
 			OpenGlCommand(false, false, "glTexParameterf"), m_target(target), m_pname(pname), m_param(param)
 		{
 		}
@@ -713,7 +719,7 @@ namespace opengl {
 	class GlBlendColorCommand : public OpenGlCommand
 	{
 	public:
-		GlBlendColorCommand(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha):
+		GlBlendColorCommand(const GLfloat& red, const GLfloat& green, const GLfloat& blue, const GLfloat& alpha):
 			OpenGlCommand(false, false, "glBlendColor"), m_red(red), m_green(green), m_blue(blue), m_alpha(alpha)
 		{
 		}
@@ -732,7 +738,7 @@ namespace opengl {
 	class GlReadBufferCommand : public OpenGlCommand
 	{
 	public:
-		GlReadBufferCommand(GLenum src):
+		GlReadBufferCommand(const GLenum& src):
 			OpenGlCommand(false, false, "glReadBuffer"), m_src(src)
 		{
 		}
@@ -748,7 +754,7 @@ namespace opengl {
 	class GlCreateShaderCommand : public OpenGlCommand
 	{
 	public:
-		GlCreateShaderCommand(GLenum type, GLuint& returnValue):
+		GlCreateShaderCommand(const GLenum& type, GLuint& returnValue):
 			OpenGlCommand(true, true, "glCreateShader"), m_type(type), m_returnValue(returnValue)
 		{
 		}
@@ -765,7 +771,7 @@ namespace opengl {
 	class GlCompileShaderCommand : public OpenGlCommand
 	{
 	public:
-		GlCompileShaderCommand(GLuint shader):
+		GlCompileShaderCommand(const GLuint& shader):
 			OpenGlCommand(false, false, "glCompileShader"), m_shader(shader)
 		{
 		}
@@ -781,14 +787,14 @@ namespace opengl {
 	class GlShaderSourceCommand : public OpenGlCommand
 	{
 	public:
-		GlShaderSourceCommand(GLuint shader, const std::string& string):
+		GlShaderSourceCommand(const GLuint& shader, const std::string& string):
 			OpenGlCommand(false, false, "glShaderSource"), m_shader(shader), m_string(std::move(string))
 		{
 		}
 
 		void commandToExecute(void) override
 		{
-			const GLchar * strShaderData = m_string.data();
+			const GLchar* strShaderData = m_string.data();
 			g_glShaderSource(m_shader, 1, &strShaderData, nullptr);
 		}
 	private:
@@ -815,7 +821,7 @@ namespace opengl {
 	class GlAttachShaderCommand : public OpenGlCommand
 	{
 	public:
-		GlAttachShaderCommand(GLuint program, GLuint shader):
+		GlAttachShaderCommand(const GLuint& program, const GLuint& shader):
 			OpenGlCommand(false, false, "glAttachShader"), m_program(program), m_shader(shader)
 		{
 		}
@@ -832,7 +838,7 @@ namespace opengl {
 	class GlLinkProgramCommand : public OpenGlCommand
 	{
 	public:
-		GlLinkProgramCommand(GLuint program):
+		GlLinkProgramCommand(const GLuint& program):
 			OpenGlCommand(false, false, "glLinkProgram"), m_program(program)
 		{
 		}
@@ -848,7 +854,7 @@ namespace opengl {
 	class GlUseProgramCommand : public OpenGlCommand
 	{
 	public:
-		GlUseProgramCommand(GLuint program):
+		GlUseProgramCommand(const GLuint& program):
 				OpenGlCommand(false, false, "glUseProgram"), m_program(program)
 		{
 		}
@@ -864,7 +870,7 @@ namespace opengl {
 	class GlGetUniformLocationCommand : public OpenGlCommand
 	{
 	public:
-		GlGetUniformLocationCommand(GLuint program, const GLchar *name, GLint& returnValue):
+		GlGetUniformLocationCommand(const GLuint& program, const GLchar* name, GLint& returnValue):
 			OpenGlCommand(true, true, "glGetUniformLocation"), m_program(program), m_name(name), m_returnValue(returnValue)
 		{
 		}
@@ -876,13 +882,13 @@ namespace opengl {
 	private:
 		GLint& m_returnValue;
 		GLuint m_program;
-		const GLchar *m_name;
+		const GLchar* m_name;
 	};
 
 	class GlUniform1iCommand : public OpenGlCommand
 	{
 	public:
-		GlUniform1iCommand(GLint location, GLint v0):
+		GlUniform1iCommand(const GLint& location, const GLint& v0):
 			OpenGlCommand(false, false, "glUniform1i"), m_location(location), m_v0(v0)
 		{
 		}
@@ -899,7 +905,7 @@ namespace opengl {
 	class GlUniform1fCommand : public OpenGlCommand
 	{
 	public:
-		GlUniform1fCommand(GLint location, GLfloat v0):
+		GlUniform1fCommand(const GLint& location, const GLfloat& v0):
 				OpenGlCommand(false, false, "glUniform1f"), m_location(location), m_v0(v0)
 		{
 		}
@@ -916,7 +922,7 @@ namespace opengl {
 	class GlUniform2fCommand : public OpenGlCommand
 	{
 	public:
-		GlUniform2fCommand(GLint location, GLfloat v0, GLfloat v1):
+		GlUniform2fCommand(const GLint& location, const GLfloat& v0, const GLfloat& v1):
 				OpenGlCommand(false, false, "glUniform2f"), m_location(location), m_v0(v0), m_v1(v1)
 		{
 		}
@@ -934,7 +940,7 @@ namespace opengl {
 	class GlUniform2iCommand : public OpenGlCommand
 	{
 	public:
-		GlUniform2iCommand(GLint location, GLint v0, GLint v1):
+		GlUniform2iCommand(const GLint& location, const GLint& v0, const GLint& v1):
 			OpenGlCommand(false, false, "glUniform2i"), m_location(location), m_v0(v0), m_v1(v1)
 		{
 		}
@@ -952,7 +958,7 @@ namespace opengl {
 	class GlUniform4iCommand : public OpenGlCommand
 	{
 	public:
-		GlUniform4iCommand(GLint location, GLint v0, GLint v1, GLint v2, GLint v3):
+		GlUniform4iCommand(const GLint& location, const GLint& v0, const GLint& v1, const GLint& v2, const GLint& v3):
 			OpenGlCommand(false, false, "glUniform4i"), m_location(location), m_v0(v0), m_v1(v1), m_v2(v2), m_v3(v3)
 		{
 		}
@@ -972,7 +978,7 @@ namespace opengl {
 	class GlUniform4fCommand : public OpenGlCommand
 	{
 	public:
-		GlUniform4fCommand(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3):
+		GlUniform4fCommand(const GLint& location, const GLfloat& v0, const GLfloat& v1, const GLfloat& v2, const GLfloat& v3):
 			OpenGlCommand(false, false, "glUniform4f"), m_location(location), m_v0(v0), m_v1(v1), m_v2(v2), m_v3(v3)
 		{
 		}
@@ -992,7 +998,7 @@ namespace opengl {
 	class GlUniform3fvCommand : public OpenGlCommand
 	{
 	public:
-		GlUniform3fvCommand(GLint location, GLsizei count, std::unique_ptr<GLfloat[]> value):
+		GlUniform3fvCommand(const GLint& location, const GLsizei& count, std::unique_ptr<GLfloat[]> value):
 			OpenGlCommand(false, false, "glUniform3fv"), m_location(location), m_count(count), m_value(std::move(value))
 		{
 		}
@@ -1010,7 +1016,7 @@ namespace opengl {
 	class GlUniform4fvCommand : public OpenGlCommand
 	{
 	public:
-		GlUniform4fvCommand(GLint location, GLsizei count, std::unique_ptr<GLfloat[]> value):
+		GlUniform4fvCommand(const GLint& location, const GLsizei& count, std::unique_ptr<GLfloat[]> value):
 			OpenGlCommand(false, false, "glUniform4fv"), m_location(location), m_count(count), m_value(std::move(value))
 		{
 		}
@@ -1028,7 +1034,7 @@ namespace opengl {
 	class GlDetachShaderCommand : public OpenGlCommand
 	{
 	public:
-		GlDetachShaderCommand(GLuint program, GLuint shader):
+		GlDetachShaderCommand(const GLuint& program, const GLuint& shader):
 			OpenGlCommand(false, false, "glDetachShader"), m_program(program), m_shader(shader)
 		{
 		}
@@ -1045,7 +1051,7 @@ namespace opengl {
 	class GlDeleteShaderCommand : public OpenGlCommand
 	{
 	public:
-		GlDeleteShaderCommand(GLuint shader):
+		GlDeleteShaderCommand(const GLuint& shader):
 			OpenGlCommand(false, false, "glDeleteShader"), m_shader(shader)
 		{
 		}
@@ -1061,7 +1067,7 @@ namespace opengl {
 	class GlDeleteProgramCommand : public OpenGlCommand
 	{
 	public:
-		GlDeleteProgramCommand(GLuint program):
+		GlDeleteProgramCommand(const GLuint& program):
 			OpenGlCommand(false, false, "glDeleteProgram"), m_program(program)
 		{
 		}
@@ -1077,7 +1083,7 @@ namespace opengl {
 	class GlGetProgramInfoLogCommand : public OpenGlCommand
 	{
 	public:
-		GlGetProgramInfoLogCommand(GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog):
+		GlGetProgramInfoLogCommand(const GLuint& program, const GLsizei& bufSize, GLsizei* length, GLchar* infoLog):
 			OpenGlCommand(true, true, "glGetProgramInfoLog"), m_program(program), m_bufSize(bufSize), m_length(length), m_infoLog(infoLog)
 		{
 		}
@@ -1096,7 +1102,7 @@ namespace opengl {
 	class GlGetShaderInfoLogCommand : public OpenGlCommand
 	{
 	public:
-		GlGetShaderInfoLogCommand(GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *infoLog):
+		GlGetShaderInfoLogCommand(const GLuint& shader, const GLsizei& bufSize, GLsizei* length, GLchar* infoLog):
 			OpenGlCommand(true, true, "glGetShaderInfoLog"), m_shader(shader), m_bufSize(bufSize), m_length(length), m_infoLog(infoLog)
 		{
 		}
@@ -1115,7 +1121,7 @@ namespace opengl {
 	class GlGetShaderivCommand : public OpenGlCommand
 	{
 	public:
-		GlGetShaderivCommand(GLuint shader, GLenum pname, GLint *params):
+		GlGetShaderivCommand(const GLuint& shader, const GLenum& pname, GLint* params):
 			OpenGlCommand(true, true, "glGetShaderiv"), m_shader(shader), m_pname(pname), m_params(params)
 		{
 		}
@@ -1133,7 +1139,7 @@ namespace opengl {
 	class GlGetProgramivCommand : public OpenGlCommand
 	{
 	public:
-		GlGetProgramivCommand(GLuint program, GLenum pname, GLint *params):
+		GlGetProgramivCommand(const GLuint& program, const GLenum& pname, GLint* params):
 			OpenGlCommand(true, true, "glGetProgramiv"), m_program(program), m_pname(pname), m_params(params)
 		{
 		}
@@ -1151,7 +1157,7 @@ namespace opengl {
 	class GlEnableVertexAttribArrayCommand : public OpenGlCommand
 	{
 	public:
-		GlEnableVertexAttribArrayCommand(GLuint index):
+		GlEnableVertexAttribArrayCommand(const GLuint& index):
 			OpenGlCommand(false, false, "glEnableVertexAttribArray"), m_index(index)
 		{
 		}
@@ -1167,7 +1173,7 @@ namespace opengl {
 	class GlDisableVertexAttribArrayCommand : public OpenGlCommand
 	{
 	public:
-		GlDisableVertexAttribArrayCommand(GLuint index):
+		GlDisableVertexAttribArrayCommand(const GLuint& index):
 			OpenGlCommand(false, false, "glDisableVertexAttribArray"), m_index(index)
 		{
 		}
@@ -1183,7 +1189,7 @@ namespace opengl {
 	class GlVertexAttribPointerBufferedCommand : public OpenGlCommand
 	{
 	public:
-		GlVertexAttribPointerBufferedCommand(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride,
+		GlVertexAttribPointerBufferedCommand(const GLuint& index, const GLint& size, const GLenum& type, const GLboolean& normalized, const GLsizei& stride,
 			std::size_t offset):
 			OpenGlCommand(false, false, "glVertexAttribPointer"), m_index(index), m_size(size), m_type(type), m_normalized(normalized),
 			m_stride(stride), m_offset(offset)
@@ -1206,7 +1212,7 @@ namespace opengl {
 	class GlBindAttribLocationCommand : public OpenGlCommand
 	{
 	public:
-		GlBindAttribLocationCommand(GLuint program, GLuint index, const std::string& name):
+		GlBindAttribLocationCommand(const GLuint& program, const GLuint& index, const std::string& name):
 			OpenGlCommand(false, false, "glBindAttribLocation"), m_program(program), m_index(index), m_name(std::move(name))
 		{
 		}
@@ -1224,7 +1230,7 @@ namespace opengl {
 	class GlVertexAttrib1fCommand : public OpenGlCommand
 	{
 	public:
-		GlVertexAttrib1fCommand(GLuint index, GLfloat x):
+		GlVertexAttrib1fCommand(const GLuint& index, const GLfloat& x):
 			OpenGlCommand(false, false, "glVertexAttrib1f"), m_index(index), m_x(x)
 		{
 		}
@@ -1241,7 +1247,7 @@ namespace opengl {
 	class GlVertexAttrib4fCommand : public OpenGlCommand
 	{
 	public:
-		GlVertexAttrib4fCommand(GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w):
+		GlVertexAttrib4fCommand(const GLuint& index, const GLfloat& x, const GLfloat& y, const GLfloat& z, const GLfloat& w):
 			OpenGlCommand(false, false, "glVertexAttrib4f"), m_index(index), m_x(x), m_y(y), m_z(z), m_w(w)
 		{
 		}
@@ -1261,7 +1267,7 @@ namespace opengl {
 	class GlVertexAttrib4fvCommand : public OpenGlCommand
 	{
 	public:
-		GlVertexAttrib4fvCommand(GLuint index, std::unique_ptr<GLfloat[]> v):
+		GlVertexAttrib4fvCommand(const GLuint& index, std::unique_ptr<GLfloat[]> v):
 			OpenGlCommand(false, false, "glVertexAttrib4fv"), m_index(index), m_v(std::move(v))
 		{
 		}
@@ -1278,7 +1284,7 @@ namespace opengl {
 	class GlDepthRangefCommand : public OpenGlCommand
 	{
 	public:
-		GlDepthRangefCommand(GLfloat n, GLfloat f):
+		GlDepthRangefCommand(const GLfloat& n, const GLfloat& f):
 			OpenGlCommand(false, false, "glDepthRangef"), m_n(n), m_f(f)
 		{
 		}
@@ -1295,7 +1301,7 @@ namespace opengl {
 	class GlClearDepthfCommand : public OpenGlCommand
 	{
 	public:
-		GlClearDepthfCommand(GLfloat d):
+		GlClearDepthfCommand(const GLfloat& d):
 			OpenGlCommand(false, false, "glClearDepthf"), m_d(d)
 		{
 		}
@@ -1311,7 +1317,7 @@ namespace opengl {
 	class GlDrawBuffersCommand : public OpenGlCommand
 	{
 	public:
-		GlDrawBuffersCommand(GLsizei n, std::unique_ptr<GLenum[]> bufs):
+		GlDrawBuffersCommand(const GLsizei& n, std::unique_ptr<GLenum[]> bufs):
 			OpenGlCommand(false, false, "glDrawBuffers"), m_n(n), m_bufs(std::move(bufs))
 		{
 		}
@@ -1328,7 +1334,7 @@ namespace opengl {
 	class GlGenFramebuffersCommand : public OpenGlCommand
 	{
 	public:
-		GlGenFramebuffersCommand(GLsizei n, GLuint *framebuffers):
+		GlGenFramebuffersCommand(const GLsizei& n, GLuint* framebuffers):
 			OpenGlCommand(true, false, "glGenFramebuffers"), m_n(n), m_framebuffers(framebuffers)
 		{
 		}
@@ -1345,7 +1351,7 @@ namespace opengl {
 	class GlBindFramebufferCommand : public OpenGlCommand
 	{
 	public:
-		GlBindFramebufferCommand(GLenum target, GLuint framebuffer):
+		GlBindFramebufferCommand(const GLenum& target, const GLuint& framebuffer):
 			OpenGlCommand(false, false, "glBindFramebuffer"), m_target(target), m_framebuffer(framebuffer)
 		{
 		}
@@ -1362,7 +1368,7 @@ namespace opengl {
 	class GlDeleteFramebuffersCommand : public OpenGlCommand
 	{
 	public:
-		GlDeleteFramebuffersCommand(GLsizei n, std::unique_ptr<GLuint[]> framebuffers):
+		GlDeleteFramebuffersCommand(const GLsizei& n, std::unique_ptr<GLuint[]> framebuffers):
 			OpenGlCommand(false, false, "glDeleteFramebuffers"), m_n(n), m_framebuffers(std::move(framebuffers))
 		{
 		}
@@ -1379,7 +1385,7 @@ namespace opengl {
 	class GlFramebufferTexture2DCommand : public OpenGlCommand
 	{
 	public:
-		GlFramebufferTexture2DCommand(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level):
+		GlFramebufferTexture2DCommand(const GLenum& target, const GLenum& attachment, const GLenum& textarget, const GLuint& texture, const GLint& level):
 			OpenGlCommand(false, false, "glFramebufferTexture2D"), m_target(target), m_attachment(attachment), m_textarget(textarget),
 			m_texture(texture), m_level(level)
 		{
@@ -1400,8 +1406,8 @@ namespace opengl {
 	class GlTexImage2DMultisampleCommand : public OpenGlCommand
 	{
 	public:
-		GlTexImage2DMultisampleCommand(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width,
-			GLsizei height, GLboolean fixedsamplelocations):
+		GlTexImage2DMultisampleCommand(const GLenum& target, const GLsizei& samples, const GLenum& internalformat, const GLsizei& width,
+			GLsizei height, const GLboolean& fixedsamplelocations):
 			OpenGlCommand(false, false, "glTexImage2DMultisample"), m_target(target), m_samples(samples), m_internalformat(internalformat),
 			m_width(width), m_height(height), m_fixedsamplelocations(fixedsamplelocations)
 		{
@@ -1423,8 +1429,8 @@ namespace opengl {
 	class GlTexStorage2DMultisampleCommand : public OpenGlCommand
 	{
 	public:
-		GlTexStorage2DMultisampleCommand(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width,
-			GLsizei height, GLboolean fixedsamplelocations):
+		GlTexStorage2DMultisampleCommand(const GLenum& target, const GLsizei& samples, const GLenum& internalformat, const GLsizei& width,
+			GLsizei height, const GLboolean& fixedsamplelocations):
 			OpenGlCommand(false, false, "glTexStorage2DMultisample"), m_target(target), m_samples(samples), m_internalformat(internalformat),
 			m_width(width), m_height(height), m_fixedsamplelocations(fixedsamplelocations)
 		{
@@ -1446,7 +1452,7 @@ namespace opengl {
 	class GlGenRenderbuffersCommand : public OpenGlCommand
 	{
 	public:
-		GlGenRenderbuffersCommand(GLsizei n, GLuint *renderbuffers):
+		GlGenRenderbuffersCommand(const GLsizei& n, GLuint* renderbuffers):
 			OpenGlCommand(true, false, "glGenRenderbuffers"), m_n(n), m_renderbuffers(renderbuffers)
 		{
 		}
@@ -1463,7 +1469,7 @@ namespace opengl {
 	class GlBindRenderbufferCommand : public OpenGlCommand
 	{
 	public:
-		GlBindRenderbufferCommand(GLenum target, GLuint renderbuffer):
+		GlBindRenderbufferCommand(const GLenum& target, const GLuint& renderbuffer):
 			OpenGlCommand(false, false, "glBindRenderbuffer"), m_target(target), m_renderbuffer(renderbuffer)
 		{
 		}
@@ -1480,7 +1486,7 @@ namespace opengl {
 	class GlRenderbufferStorageCommand : public OpenGlCommand
 	{
 	public:
-		GlRenderbufferStorageCommand(GLenum target, GLenum internalformat, GLsizei width, GLsizei height):
+		GlRenderbufferStorageCommand(const GLenum& target, const GLenum& internalformat, const GLsizei& width, const GLsizei& height):
 			OpenGlCommand(false, false, "glRenderbufferStorage"), m_target(target), m_internalformat(internalformat), m_width(width), m_height(height)
 		{
 		}
@@ -1499,7 +1505,7 @@ namespace opengl {
 	class GlDeleteRenderbuffersCommand : public OpenGlCommand
 	{
 	public:
-		GlDeleteRenderbuffersCommand(GLsizei n, std::unique_ptr<GLuint[]> renderbuffers):
+		GlDeleteRenderbuffersCommand(const GLsizei& n, std::unique_ptr<GLuint[]> renderbuffers):
 			OpenGlCommand(false, false, "glDeleteRenderbuffers"), m_n(n), m_renderbuffers(std::move(renderbuffers))
 		{
 		}
@@ -1516,7 +1522,7 @@ namespace opengl {
 	class GlFramebufferRenderbufferCommand : public OpenGlCommand
 	{
 	public:
-		GlFramebufferRenderbufferCommand(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer):
+		GlFramebufferRenderbufferCommand(const GLenum& target, const GLenum& attachment, const GLenum& renderbuffertarget, const GLuint& renderbuffer):
 			OpenGlCommand(false, false, "glFramebufferRenderbuffer"), m_target(target), m_attachment(attachment), m_renderbuffertarget(renderbuffertarget),
 			m_renderbuffer(renderbuffer)
 		{
@@ -1536,7 +1542,7 @@ namespace opengl {
 	class GlCheckFramebufferStatusCommand : public OpenGlCommand
 	{
 	public:
-		GlCheckFramebufferStatusCommand(GLenum target, GLenum& returnValue):
+		GlCheckFramebufferStatusCommand(const GLenum& target, GLenum& returnValue):
 			OpenGlCommand(true, true, "glCheckFramebufferStatus"), m_target(target), m_returnValue(returnValue)
 		{
 		}
@@ -1553,8 +1559,8 @@ namespace opengl {
 	class GlBlitFramebufferCommand : public OpenGlCommand
 	{
 	public:
-		GlBlitFramebufferCommand(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0,
-			GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter):
+		GlBlitFramebufferCommand(const GLint& srcX0, const GLint& srcY0, const GLint& srcX1, const GLint& srcY1, const GLint& dstX0, const GLint& dstY0,
+			GLint dstX1, const GLint& dstY1, const GLbitfield& mask, const GLenum& filter):
 			OpenGlCommand(false, false, "glBlitFramebuffer"), m_srcX0(srcX0), m_srcY0(srcY0), m_srcX1(srcX1), m_srcY1(srcY1), m_dstX0(dstX0),
 			m_dstY0(dstY0), m_dstX1(dstX1), m_dstY1(dstY1), m_mask(mask), m_filter(filter)
 		{
@@ -1581,7 +1587,7 @@ namespace opengl {
 	class GlGenVertexArraysCommand : public OpenGlCommand
 	{
 	public:
-		GlGenVertexArraysCommand(GLsizei n, GLuint *arrays):
+		GlGenVertexArraysCommand(const GLsizei& n, GLuint* arrays):
 			OpenGlCommand(true, false, "glGenVertexArrays"), m_n(n), m_arrays(arrays)
 		{
 		}
@@ -1598,7 +1604,7 @@ namespace opengl {
 	class GlBindVertexArrayCommand : public OpenGlCommand
 	{
 	public:
-		GlBindVertexArrayCommand(GLuint array):
+		GlBindVertexArrayCommand(const GLuint& array):
 			OpenGlCommand(false, false, "glBindVertexArray"), m_array(array)
 		{
 		}
@@ -1614,7 +1620,7 @@ namespace opengl {
 	class GlDeleteVertexArraysCommand : public OpenGlCommand
 	{
 	public:
-		GlDeleteVertexArraysCommand(GLsizei n, std::unique_ptr<GLuint[]> arrays):
+		GlDeleteVertexArraysCommand(const GLsizei& n, std::unique_ptr<GLuint[]> arrays):
 			OpenGlCommand(false, false, "glDeleteVertexArrays"), m_n(n), m_arrays(std::move(arrays))
 		{
 		}
@@ -1631,7 +1637,7 @@ namespace opengl {
 	class GlGenBuffersCommand : public OpenGlCommand
 	{
 	public:
-		GlGenBuffersCommand(GLsizei n, GLuint *buffers):
+		GlGenBuffersCommand(const GLsizei& n, GLuint* buffers):
 			OpenGlCommand(true, false, "glGenBuffers"), m_n(n), m_buffers(buffers)
 		{
 		}
@@ -1648,7 +1654,7 @@ namespace opengl {
 	class GlBindBufferCommand : public OpenGlCommand
 	{
 	public:
-		GlBindBufferCommand(GLenum target, GLuint buffer):
+		GlBindBufferCommand(const GLenum& target, const GLuint& buffer):
 			OpenGlCommand(false, false, "glBindBuffer"), m_target(target), m_buffer(buffer)
 		{
 		}
@@ -1666,7 +1672,7 @@ namespace opengl {
 	class GlBufferDataCommand : public OpenGlCommand
 	{
 	public:
-		GlBufferDataCommand(GLenum target, GLsizeiptr size, std::unique_ptr<dataType[]> data, GLenum usage):
+		GlBufferDataCommand(const GLenum& target, const GLsizeiptr& size, std::unique_ptr<dataType[]> data, const GLenum& usage):
 			OpenGlCommand(false, false, "glBufferData"), m_target(target), m_size(size), m_data(std::move(data)), m_usage(usage)
 		{
 		}
@@ -1685,7 +1691,7 @@ namespace opengl {
 	class GlMapBufferCommand : public OpenGlCommand
 	{
 	public:
-		GlMapBufferCommand(GLenum target, GLenum access):
+		GlMapBufferCommand(const GLenum& target, const GLenum& access):
 			OpenGlCommand(false, false, "glMapBuffer"), m_target(target), m_access(access)
 		{
 		}
@@ -1702,7 +1708,7 @@ namespace opengl {
 	class GlMapBufferRangeCommand : public OpenGlCommand
 	{
 	public:
-		GlMapBufferRangeCommand(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access,
+		GlMapBufferRangeCommand(const GLenum& target, const GLintptr& offset, const GLsizeiptr& length, const GLbitfield& access,
 			GLubyte*& returnValue):
 			OpenGlCommand(true, true, "glMapBufferRange"), m_target(target), m_offset(offset), m_length(length), m_access(access),
 			m_returnValue(returnValue)
@@ -1724,7 +1730,7 @@ namespace opengl {
 	class GlMapBufferRangeWriteAsyncCommand : public OpenGlCommand
 	{
 	public:
-		GlMapBufferRangeWriteAsyncCommand(GLenum target, GLuint buffer, GLintptr offset, u32 length,
+		GlMapBufferRangeWriteAsyncCommand(const GLenum& target, const GLuint& buffer, const GLintptr& offset, u32 length,
 			GLbitfield access, std::unique_ptr<u8[]> data):
 			OpenGlCommand(false, false, "GlMapBufferRangeWriteAsyncCommand"), m_target(target), m_buffer(buffer),
 			m_offset(offset), m_length(length), m_access(access), m_data(std::move(data))
@@ -1750,7 +1756,7 @@ namespace opengl {
 	class GlMapBufferRangeReadAsyncCommand : public OpenGlCommand
 	{
 	public:
-		GlMapBufferRangeReadAsyncCommand(GLenum target, GLuint buffer, GLintptr offset, u32 length,
+		GlMapBufferRangeReadAsyncCommand(const GLenum& target, const GLuint& buffer, const GLintptr& offset, u32 length,
 				GLbitfield access):
 				OpenGlCommand(false, false, "GlMapBufferRangeReadAsyncCommand"), m_target(target), m_buffer(buffer),
 				m_offset(offset), m_length(length), m_access(access)
@@ -1777,7 +1783,7 @@ namespace opengl {
 			}
 		}
 
-		static void* getData(GLuint buffer)
+		static void* getData(const GLuint& buffer)
 		{
 			std::unique_lock<std::mutex> lock(m_mapMutex);
 			return m_data[buffer].get();
@@ -1796,7 +1802,7 @@ namespace opengl {
 	class GlUnmapBufferCommand : public OpenGlCommand
 	{
 	public:
-		GlUnmapBufferCommand(GLenum target, GLboolean& returnValue):
+		GlUnmapBufferCommand(const GLenum& target, GLboolean& returnValue):
 			OpenGlCommand(true, true, "glUnmapBuffer"), m_target(target), m_returnValue(returnValue)
 		{
 		}
@@ -1813,7 +1819,7 @@ namespace opengl {
 	class GlUnmapBufferAsyncCommand : public OpenGlCommand
 	{
 	public:
-		GlUnmapBufferAsyncCommand(GLenum target):
+		GlUnmapBufferAsyncCommand(const GLenum& target):
 				OpenGlCommand(false, false, "glUnmapBuffer"), m_target(target)
 		{
 		}
@@ -1829,7 +1835,7 @@ namespace opengl {
 	class GlDeleteBuffersCommand : public OpenGlCommand
 	{
 	public:
-		GlDeleteBuffersCommand(GLsizei n, std::unique_ptr<GLuint[]> buffers):
+		GlDeleteBuffersCommand(const GLsizei& n, std::unique_ptr<GLuint[]> buffers):
 			OpenGlCommand(false, false, "glDeleteBuffers"), m_n(n), m_buffers(std::move(buffers))
 		{
 		}
@@ -1846,8 +1852,8 @@ namespace opengl {
 	class GlBindImageTextureCommand : public OpenGlCommand
 	{
 	public:
-		GlBindImageTextureCommand(GLuint unit, GLuint texture, GLint level, GLboolean layered, GLint layer,
-			GLenum access, GLenum format):
+		GlBindImageTextureCommand(const GLuint& unit, const GLuint& texture, const GLint& level, const GLboolean& layered, const GLint& layer,
+			GLenum access, const GLenum& format):
 			OpenGlCommand(false, false, "glBindImageTexture"), m_unit(unit), m_texture(texture), m_level(level), m_layered(layered), m_layer(layer),
 			m_access(access), m_format(format)
 		{
@@ -1870,7 +1876,7 @@ namespace opengl {
 	class GlMemoryBarrierCommand : public OpenGlCommand
 	{
 	public:
-		GlMemoryBarrierCommand(GLbitfield barriers):
+		GlMemoryBarrierCommand(const GLbitfield& barriers):
 			OpenGlCommand(false, false, "glMemoryBarrier"), m_barriers(barriers)
 		{
 		}
@@ -1886,7 +1892,7 @@ namespace opengl {
 	class GlGetStringiCommand : public OpenGlCommand
 	{
 	public:
-		GlGetStringiCommand(GLenum name, GLuint index, const GLubyte*& returnValue):
+		GlGetStringiCommand(const GLenum& name, const GLuint& index, const GLubyte*& returnValue):
 			OpenGlCommand(true, false, "glGetStringi"), m_name(name), m_index(index), m_returnValue(returnValue)
 		{
 		}
@@ -1904,7 +1910,7 @@ namespace opengl {
 	class GlInvalidateFramebufferCommand : public OpenGlCommand
 	{
 	public:
-		GlInvalidateFramebufferCommand(GLenum target, GLsizei numAttachments, std::unique_ptr<GLenum[]> attachments):
+		GlInvalidateFramebufferCommand(const GLenum& target, const GLsizei& numAttachments, std::unique_ptr<GLenum[]> attachments):
 			OpenGlCommand(false, false, "glInvalidateFramebuffer"), m_target(target), m_numAttachments(numAttachments),
 			m_attachments(std::move(attachments))
 		{
@@ -1924,7 +1930,7 @@ namespace opengl {
 	class GlBufferStorageCommand : public OpenGlCommand
 	{
 	public:
-		GlBufferStorageCommand(GLenum target, GLsizeiptr size, std::unique_ptr<dataType[]> data, GLbitfield flags):
+		GlBufferStorageCommand(const GLenum& target, const GLsizeiptr& size, std::unique_ptr<dataType[]> data, const GLbitfield& flags):
 			OpenGlCommand(false, false, "glBufferStorage"), m_target(target), m_size(size), m_data(std::move(data)), m_flags(flags)
 		{
 		}
@@ -1943,7 +1949,7 @@ namespace opengl {
 	class GlFenceSyncCommand : public OpenGlCommand
 	{
 	public:
-		GlFenceSyncCommand(GLenum condition, GLbitfield flags, GLsync& returnValue):
+		GlFenceSyncCommand(const GLenum& condition, const GLbitfield& flags, GLsync& returnValue):
 			OpenGlCommand(true, false, "glFenceSync"), m_condition(condition), m_flags(flags), m_returnValue(returnValue)
 		{
 		}
@@ -1961,7 +1967,7 @@ namespace opengl {
 	class GlClientWaitSyncCommand : public OpenGlCommand
 	{
 	public:
-		GlClientWaitSyncCommand(GLsync sync, GLbitfield flags, GLuint64 timeout):
+		GlClientWaitSyncCommand(const GLsync& sync, const GLbitfield& flags, const GLuint64& timeout):
 			OpenGlCommand(true, false, "glClientWaitSync"), m_sync(sync), m_flags(flags), m_timeout(timeout)
 		{
 		}
@@ -1979,7 +1985,7 @@ namespace opengl {
 	class GlDeleteSyncCommand : public OpenGlCommand
 	{
 	public:
-		GlDeleteSyncCommand(GLsync sync):
+		GlDeleteSyncCommand(const GLsync& sync):
 			OpenGlCommand(true, false, "glDeleteSync"), m_sync(sync)
 		{
 		}
@@ -1995,7 +2001,7 @@ namespace opengl {
 	class GlGetUniformBlockIndexCommand : public OpenGlCommand
 	{
 	public:
-		GlGetUniformBlockIndexCommand(GLuint program, const GLchar *uniformBlockName, GLuint& returnValue):
+		GlGetUniformBlockIndexCommand(const GLuint& program, const GLchar* uniformBlockName, GLuint& returnValue):
 			OpenGlCommand(true, true, "glGetUniformBlockIndex"), m_program(program), m_uniformBlockName(uniformBlockName), m_returnValue(returnValue)
 		{
 		}
@@ -2006,14 +2012,14 @@ namespace opengl {
 		}
 	private:
 		GLuint m_program;
-		const GLchar *m_uniformBlockName;
+		const GLchar* m_uniformBlockName;
 		GLuint m_returnValue;
 	};
 
 	class GlUniformBlockBindingCommand : public OpenGlCommand
 	{
 	public:
-		GlUniformBlockBindingCommand(GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding):
+		GlUniformBlockBindingCommand(const GLuint& program, const GLuint& uniformBlockIndex, const GLuint& uniformBlockBinding):
 			OpenGlCommand(false, false, "glUniformBlockBinding"), m_program(program), m_uniformBlockIndex(uniformBlockIndex),
 			m_uniformBlockBinding(uniformBlockBinding)
 		{
@@ -2032,7 +2038,7 @@ namespace opengl {
 	class GlGetActiveUniformBlockivCommand : public OpenGlCommand
 	{
 	public:
-		GlGetActiveUniformBlockivCommand(GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint *params):
+		GlGetActiveUniformBlockivCommand(const GLuint& program, const GLuint& uniformBlockIndex, const GLenum& pname, GLint* params):
 			OpenGlCommand(true, true, "glGetActiveUniformBlockiv"), m_program(program), m_uniformBlockIndex(uniformBlockIndex), m_pname(pname),
 			m_params(params)
 		{
@@ -2052,8 +2058,8 @@ namespace opengl {
 	class GlGetUniformIndicesCommand : public OpenGlCommand
 	{
 	public:
-		GlGetUniformIndicesCommand(GLuint program, GLsizei uniformCount, const GLchar *const*uniformNames,
-			GLuint *uniformIndices):
+		GlGetUniformIndicesCommand(const GLuint& program, const GLsizei& uniformCount, const GLchar* const*uniformNames,
+			GLuint* uniformIndices):
 			OpenGlCommand(true, true, "glGetUniformIndices"), m_program(program), m_uniformCount(uniformCount), m_uniformNames(uniformNames),
 			m_uniformIndices(uniformIndices)
 		{
@@ -2066,15 +2072,15 @@ namespace opengl {
 	private:
 		GLuint m_program;
 		GLsizei m_uniformCount;
-		const GLchar *const* m_uniformNames;
+		const GLchar* const* m_uniformNames;
 		GLuint* m_uniformIndices;
 	};
 
 	class GlGetActiveUniformsivCommand : public OpenGlCommand
 	{
 	public:
-		GlGetActiveUniformsivCommand(GLuint program, GLsizei uniformCount, const GLuint *uniformIndices, GLenum pname,
-			GLint *params):
+		GlGetActiveUniformsivCommand(const GLuint& program, const GLsizei& uniformCount, const GLuint* uniformIndices, const GLenum& pname,
+			GLint* params):
 			OpenGlCommand(true, true, "glGetActiveUniformsiv"), m_program(program), m_uniformCount(uniformCount), m_uniformIndices(uniformIndices),
 			m_pname(pname), m_params(params)
 		{
@@ -2095,7 +2101,7 @@ namespace opengl {
 	class GlBindBufferBaseCommand : public OpenGlCommand
 	{
 	public:
-		GlBindBufferBaseCommand(GLenum target, GLuint index, GLuint buffer):
+		GlBindBufferBaseCommand(const GLenum& target, const GLuint& index, const GLuint& buffer):
 			OpenGlCommand(false, false, "glBindBufferBase"), m_target(target), m_index(index), m_buffer(buffer)
 		{
 		}
@@ -2114,7 +2120,7 @@ namespace opengl {
 	class GlBufferSubDataCommand : public OpenGlCommand
 	{
 	public:
-		GlBufferSubDataCommand(GLenum target, GLintptr offset, GLsizeiptr size, std::unique_ptr<dataType[]> data):
+		GlBufferSubDataCommand(const GLenum& target, const GLintptr& offset, const GLsizeiptr& size, std::unique_ptr<dataType[]> data):
 			OpenGlCommand(false, false, "glBufferSubData"), m_target(target), m_offset(offset), m_size(size), m_data(std::move(data))
 		{
 		}
@@ -2133,7 +2139,7 @@ namespace opengl {
 	class GlGetProgramBinaryCommand : public OpenGlCommand
 	{
 	public:
-		GlGetProgramBinaryCommand(GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary):
+		GlGetProgramBinaryCommand(const GLuint& program, const GLsizei& bufSize, GLsizei* length, GLenum* binaryFormat, void* binary):
 			OpenGlCommand(true, true, "glGetProgramBinary"), m_program(program), m_bufSize(bufSize), m_length(length), m_binaryFormat(binaryFormat),
 			m_binary(binary)
 		{
@@ -2155,7 +2161,7 @@ namespace opengl {
 	class GlProgramBinaryCommand : public OpenGlCommand
 	{
 	public:
-		GlProgramBinaryCommand(GLuint program, GLenum binaryFormat, std::unique_ptr<dataType[]> binary, GLsizei length):
+		GlProgramBinaryCommand(const GLuint& program, const GLenum& binaryFormat, std::unique_ptr<dataType[]> binary, const GLsizei& length):
 			OpenGlCommand(false, false, "glProgramBinary"), m_program(program), m_binaryFormat(binaryFormat), m_binary(std::move(binary)),
 			m_length(length)
 		{
@@ -2175,7 +2181,7 @@ namespace opengl {
 	class GlProgramParameteriCommand : public OpenGlCommand
 	{
 	public:
-		GlProgramParameteriCommand(GLuint program, GLenum pname, GLint value):
+		GlProgramParameteriCommand(const GLuint& program, const GLenum& pname, const GLint& value):
 			OpenGlCommand(false, false, "glProgramParameteri"), m_program(program), m_pname(pname), m_value(value)
 		{
 		}
@@ -2193,7 +2199,7 @@ namespace opengl {
 	class GlTexStorage2DCommand : public OpenGlCommand
 	{
 	public:
-		GlTexStorage2DCommand(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height):
+		GlTexStorage2DCommand(const GLenum& target, const GLsizei& levels, const GLenum& internalformat, const GLsizei& width, const GLsizei& height):
 			OpenGlCommand(false, false, "glTexStorage2D"), m_target(target), m_levels(levels), m_internalformat(internalformat),
 			m_width(width), m_height(height)
 		{
@@ -2214,7 +2220,7 @@ namespace opengl {
 	class GlTextureStorage2DCommand : public OpenGlCommand
 	{
 	public:
-		GlTextureStorage2DCommand(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height):
+		GlTextureStorage2DCommand(const GLuint& texture, const GLsizei& levels, const GLenum& internalformat, const GLsizei& width, const GLsizei& height):
 			OpenGlCommand(false, false, "glTextureStorage2D"), m_texture(texture), m_levels(levels), m_internalformat(internalformat),
 			m_width(width), m_height(height)
 		{
@@ -2236,8 +2242,8 @@ namespace opengl {
 	class GlTextureSubImage2DUnbufferedCommand : public OpenGlCommand
 	{
 	public:
-		GlTextureSubImage2DUnbufferedCommand(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width,
-			GLsizei height, GLenum format, GLenum type, std::unique_ptr<pixelType[]> pixels):
+		GlTextureSubImage2DUnbufferedCommand(const GLuint& texture, const GLint& level, const GLint& xoffset, const GLint& yoffset, const GLsizei& width,
+			GLsizei height, const GLenum& format, const GLenum& type, std::unique_ptr<pixelType[]> pixels):
 			OpenGlCommand(false, false, "glTextureSubImage2D"), m_texture(texture), m_level(level), m_xoffset(xoffset), m_yoffset(yoffset),
 			m_width(width), m_height(height), m_format(format), m_type(type), m_pixels(std::move(pixels))
 		{
@@ -2263,8 +2269,8 @@ namespace opengl {
 	class GlTextureSubImage2DBufferedCommand : public OpenGlCommand
 	{
 	public:
-		GlTextureSubImage2DBufferedCommand(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width,
-			GLsizei height, GLenum format, GLenum type, std::size_t offset):
+		GlTextureSubImage2DBufferedCommand(const GLuint& texture, const GLint& level, const GLint& xoffset, const GLint& yoffset, const GLsizei& width,
+			GLsizei height, const GLenum& format, const GLenum& type, std::size_t offset):
 			OpenGlCommand(false, false, "glTextureSubImage2D"), m_texture(texture), m_level(level), m_xoffset(xoffset), m_yoffset(yoffset),
 			m_width(width), m_height(height), m_format(format), m_type(type), m_offset(offset)
 		{
@@ -2273,7 +2279,7 @@ namespace opengl {
 		void commandToExecute(void) override
 		{
 			g_glTextureSubImage2D(m_texture, m_level, m_xoffset, m_yoffset, m_width, m_height, m_format, m_type,
-								  (const GLvoid *)m_offset);
+								  (const GLvoid* )m_offset);
 		}
 	private:
 		GLuint m_texture;
@@ -2290,8 +2296,8 @@ namespace opengl {
 	class GlTextureStorage2DMultisampleCommand : public OpenGlCommand
 	{
 	public:
-		GlTextureStorage2DMultisampleCommand(GLuint texture, GLenum target, GLsizei samples, GLenum internalformat,
-			GLsizei width, GLsizei height, GLboolean fixedsamplelocations):
+		GlTextureStorage2DMultisampleCommand(const GLuint& texture, const GLenum& target, const GLsizei& samples, const GLenum& internalformat,
+			GLsizei width, const GLsizei& height, const GLboolean& fixedsamplelocations):
 			OpenGlCommand(false, false, "glTextureStorage2DMultisample"), m_texture(texture), m_target(target), m_samples(samples),
 			m_internalformat(internalformat), m_width(width), m_height(height),
 			m_fixedsamplelocations(fixedsamplelocations)
@@ -2316,7 +2322,7 @@ namespace opengl {
 	class GlTextureParameteriCommand : public OpenGlCommand
 	{
 	public:
-		GlTextureParameteriCommand(GLuint texture, GLenum pname, GLint param):
+		GlTextureParameteriCommand(const GLuint& texture, const GLenum& pname, const GLint& param):
 			OpenGlCommand(false, false, "glTextureParameteri"), m_texture(texture), m_pname(pname), m_param(param)
 		{
 		}
@@ -2334,7 +2340,7 @@ namespace opengl {
 	class GlTextureParameterfCommand : public OpenGlCommand
 	{
 	public:
-		GlTextureParameterfCommand(GLuint texture, GLenum pname, GLfloat param):
+		GlTextureParameterfCommand(const GLuint& texture, const GLenum& pname, const GLfloat& param):
 			OpenGlCommand(false, false, "glTextureParameterf"), m_texture(texture), m_pname(pname), m_param(param)
 		{
 		}
@@ -2352,7 +2358,7 @@ namespace opengl {
 	class GlCreateTexturesCommand : public OpenGlCommand
 	{
 	public:
-		GlCreateTexturesCommand(GLenum target, GLsizei n, GLuint *textures):
+		GlCreateTexturesCommand(const GLenum& target, const GLsizei& n, GLuint* textures):
 			OpenGlCommand(true, false, "glCreateTextures"), m_target(target), m_n(n), m_textures(textures)
 		{
 		}
@@ -2370,7 +2376,7 @@ namespace opengl {
 	class GlCreateBuffersCommand : public OpenGlCommand
 	{
 	public:
-		GlCreateBuffersCommand(GLsizei n, GLuint *buffers):
+		GlCreateBuffersCommand(const GLsizei& n, GLuint* buffers):
 			OpenGlCommand(true, false, "glCreateBuffers"), m_n(n), m_buffers(buffers)
 		{
 		}
@@ -2387,7 +2393,7 @@ namespace opengl {
 	class GlCreateFramebuffersCommand : public OpenGlCommand
 	{
 	public:
-		GlCreateFramebuffersCommand(GLsizei n, GLuint *framebuffers):
+		GlCreateFramebuffersCommand(const GLsizei& n, GLuint* framebuffers):
 			OpenGlCommand(true, false, "glCreateFramebuffers"), m_n(n), m_framebuffers(framebuffers)
 		{
 		}
@@ -2404,7 +2410,7 @@ namespace opengl {
 	class GlNamedFramebufferTextureCommand : public OpenGlCommand
 	{
 	public:
-		GlNamedFramebufferTextureCommand(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level):
+		GlNamedFramebufferTextureCommand(const GLuint& framebuffer, const GLenum& attachment, const GLuint& texture, const GLint& level):
 			OpenGlCommand(false, false, "glNamedFramebufferTexture"), m_framebuffer(framebuffer), m_attachment(attachment), m_texture(texture),
 			m_level(level)
 		{
@@ -2424,7 +2430,7 @@ namespace opengl {
 	class GlDrawElementsBaseVertexCommand : public OpenGlCommand
 	{
 	public:
-		GlDrawElementsBaseVertexCommand(GLenum mode, GLsizei count, GLenum type, const char* indices,
+		GlDrawElementsBaseVertexCommand(const GLenum& mode, const GLsizei& count, const GLenum& type, const char* indices,
 										GLint basevertex):
 			OpenGlCommand(false, false, "glDrawElementsBaseVertex"), m_mode(mode), m_count(count), m_type(type), m_indices(indices),
 			m_basevertex(basevertex)
@@ -2446,7 +2452,7 @@ namespace opengl {
 	class GlFlushMappedBufferRangeCommand : public OpenGlCommand
 	{
 	public:
-		GlFlushMappedBufferRangeCommand(GLenum target, GLintptr offset, GLsizeiptr length):
+		GlFlushMappedBufferRangeCommand(const GLenum& target, const GLintptr& offset, const GLsizeiptr& length):
 			OpenGlCommand(false, false, "glFlushMappedBufferRange"), m_target(target), m_offset(offset), m_length(length)
 		{
 		}
@@ -2547,7 +2553,7 @@ namespace opengl {
 	class CoreVideoGLGetAttributeCommand : public OpenGlCommand
 	{
 	public:
-		CoreVideoGLGetAttributeCommand(m64p_GLattr attribute, int *value):
+		CoreVideoGLGetAttributeCommand(m64p_GLattr attribute, int* value):
 			OpenGlCommand(true, false, "CoreVideo_GL_GetAttribute", false), m_attribute(attribute), m_value(value)
 		{
 		}
