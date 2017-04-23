@@ -1764,9 +1764,11 @@ const std::string m_functionName;
 			g_glBindBuffer(m_target, m_buffer);
 			void* buffer_pointer = g_glMapBufferRange(m_target, m_offset, m_length, m_access);
 
-			std::unique_lock<std::mutex> lock(m_mapMutex);
-			std::unique_ptr<u8[]>& data = m_data[m_buffer];
-			memcpy(data.get(), buffer_pointer, m_length);
+			if (buffer_pointer != nullptr) {
+				std::unique_lock<std::mutex> lock(m_mapMutex);
+				std::unique_ptr<u8[]>& data = m_data[m_buffer];
+				memcpy(data.get(), buffer_pointer, m_length);
+			}
 		}
 
 		static void* getData(GLuint buffer)
