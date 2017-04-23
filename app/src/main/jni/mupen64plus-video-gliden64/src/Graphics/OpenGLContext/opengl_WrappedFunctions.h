@@ -31,10 +31,6 @@ namespace opengl {
 #ifdef GL_DEBUG
 			if(m_isGlCommand)
 			{
-				std::stringstream errorString;
-				errorString << " Executing : " << m_functionName;
-				LOG(LOG_ERROR, errorString.str().c_str());
-
 				auto error = g_glGetError();
 				if (error != GL_NO_ERROR) {
 					std::stringstream errorString;
@@ -596,8 +592,6 @@ namespace opengl {
 		std::unique_ptr<indiceType[]> m_indices;
 		std::unique_ptr<std::vector<char>> m_data;
 	};
-
-
 
 	class GlLineWidthCommand : public OpenGlCommand
 	{
@@ -1765,7 +1759,6 @@ namespace opengl {
 
 			if(m_sizes[m_buffer] != m_length)
 			{
-				LOG(LOG_ERROR, "Buffer index=%d, SIZE=%d", m_buffer, m_length);
 				m_sizes[m_buffer] = m_length;
 				m_data[m_buffer] = std::unique_ptr<u8[]>(new u8[m_length]);
 			}
@@ -1820,7 +1813,7 @@ namespace opengl {
 	{
 	public:
 		GlUnmapBufferAsyncCommand(const GLenum& target):
-				OpenGlCommand(false, false, "glUnmapBuffer"), m_target(target)
+			OpenGlCommand(false, false, "glUnmapBuffer"), m_target(target)
 		{
 		}
 

@@ -103,7 +103,6 @@ namespace opengl {
 		static void glVertexAttribPointerUnbuffered(const GLuint& index, const GLint& size, const GLenum& type, const GLboolean& normalized, const GLsizei& stride, std::size_t offset);
 		static void glBindAttribLocation(const GLuint& program, const GLuint& index, const std::string& name);
 		static void glVertexAttrib1f(const GLuint& index, const GLfloat& x);
-		static void glVertexAttrib1fNotThreadSafe(const GLuint& index, const GLfloat& x);
 		static void glVertexAttrib4f(const GLuint& index, const GLfloat& x, const GLfloat& y, const GLfloat& z, const GLfloat& w);
 		static void glVertexAttrib4fv(const GLuint& index, std::unique_ptr<GLfloat[]> v);
 
@@ -192,56 +191,80 @@ namespace opengl {
 		static void windowsStop(void);
 		static void windowsSwapBuffers(void);
 #endif
-	
+
 		static void ReduceSwapBuffersQueued(void);
 		static void WaitForSwapBuffersQueued(void);
 	};
 
 	template <class pixelType>
-	void FunctionWrapper::glTexImage2D(const GLenum& target, const GLint& level, const GLint& internalformat, const GLsizei& width, const GLsizei& height, const GLint& border, const GLenum& format, const GLenum& type, std::unique_ptr<pixelType[]> pixels)
+	void  FunctionWrapper::glTexImage2D(const GLenum& target, const GLint& level, const GLint& internalformat, const GLsizei& width, const GLsizei& height, const GLint& border, const GLenum& format, const GLenum& type, std::unique_ptr<pixelType[]> pixels)
 	{
-		executeCommand(std::make_shared<GlTexImage2DCommand<pixelType>>(target, level, internalformat, width, height, border, format, type, std::move(pixels)));
+		if(m_threaded_wrapper)
+			executeCommand(std::make_shared<GlTexImage2DCommand<pixelType>>(target, level, internalformat, width, height, border, format, type, std::move(pixels)));
+		else
+			g_glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels.get());
 	}
 
 	template <class pixelType>
-	void FunctionWrapper::glTexSubImage2DUnbuffered(const GLenum& target, const GLint& level, const GLint& xoffset, const GLint& yoffset, const GLsizei& width, const GLsizei& height, const GLenum& format, const GLenum& type, std::unique_ptr<pixelType[]> pixels)
+	void  FunctionWrapper::glTexSubImage2DUnbuffered(const GLenum& target, const GLint& level, const GLint& xoffset, const GLint& yoffset, const GLsizei& width, const GLsizei& height, const GLenum& format, const GLenum& type, std::unique_ptr<pixelType[]> pixels)
 	{
-		executeCommand(std::make_shared<GlTexSubImage2DUnbufferedCommand<pixelType>>(target, level, xoffset, yoffset, width, height, format, type, std::move(pixels)));
+		if(m_threaded_wrapper)
+			executeCommand(std::make_shared<GlTexSubImage2DUnbufferedCommand<pixelType>>(target, level, xoffset, yoffset, width, height, format, type, std::move(pixels)));
+		else
+			g_glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels.get());
 	}
 
 	template <class indiceType>
-	void FunctionWrapper::glDrawElementsUnbuffered(const GLenum& mode, const GLsizei& count, const GLenum& type, std::unique_ptr<indiceType[]> indices, std::unique_ptr<std::vector<char>> data)
+	void  FunctionWrapper::glDrawElementsUnbuffered(const GLenum& mode, const GLsizei& count, const GLenum& type, std::unique_ptr<indiceType[]> indices, std::unique_ptr<std::vector<char>> data)
 	{
-		executeCommand(std::make_shared<GlDrawElementsUnbufferedCommand<indiceType>>(mode, count, type, std::move(indices), std::move(data)));
+		if(m_threaded_wrapper)
+			executeCommand(std::make_shared<GlDrawElementsUnbufferedCommand<indiceType>>(mode, count, type, std::move(indices), std::move(data)));
+		else
+			std::make_shared<GlDrawElementsUnbufferedCommand<indiceType>>(mode, count, type, std::move(indices), std::move(data))->performCommandSingleThreaded();
 	}
 
 	template <class dataType>
-	void FunctionWrapper::glBufferData(const GLenum& target, const GLsizeiptr& size, std::unique_ptr<dataType[]> data, const GLenum& usage)
+	void  FunctionWrapper::glBufferData(const GLenum& target, const GLsizeiptr& size, std::unique_ptr<dataType[]> data, const GLenum& usage)
 	{
-		executeCommand(std::make_shared<GlBufferDataCommand<dataType>>(target, size, std::move(data), usage));
+		if(m_threaded_wrapper)
+			executeCommand(std::make_shared<GlBufferDataCommand<dataType>>(target, size, std::move(data), usage));
+		else
+			g_glBufferData(target, size, data.get(), usage);
 	}
 
 	template <class dataType>
-	void FunctionWrapper::glBufferStorage(const GLenum& target, const GLsizeiptr& size, std::unique_ptr<dataType[]> data, const GLbitfield& flags)
+	void  FunctionWrapper::glBufferStorage(const GLenum& target, const GLsizeiptr& size, std::unique_ptr<dataType[]> data, const GLbitfield& flags)
 	{
-		executeCommand(std::make_shared<GlBufferStorageCommand<dataType>>(target, size, std::move(data), flags));
+		if(m_threaded_wrapper)
+			executeCommand(std::make_shared<GlBufferStorageCommand<dataType>>(target, size, std::move(data), flags));
+		else
+			g_glBufferStorage(target, size, data.get(), flags);
 	}
 
 	template <class dataType>
-	void FunctionWrapper::glBufferSubData(const GLenum& target, const GLintptr& offset, const GLsizeiptr& size, std::unique_ptr<dataType[]> data)
+	void  FunctionWrapper::glBufferSubData(const GLenum& target, const GLintptr& offset, const GLsizeiptr& size, std::unique_ptr<dataType[]> data)
 	{
-		executeCommand(std::make_shared<GlBufferSubDataCommand<dataType>>(target, offset, size, std::move(data)));
+		if(m_threaded_wrapper)
+			executeCommand(std::make_shared<GlBufferSubDataCommand<dataType>>(target, offset, size, std::move(data)));
+		else
+			g_glBufferSubData(target, offset, size, data.get());
 	}
 
 	template <class dataType>
-	void FunctionWrapper::glProgramBinary(const GLuint& program, const GLenum& binaryFormat, std::unique_ptr<dataType[]> binary, const GLsizei& length)
+	void  FunctionWrapper::glProgramBinary(const GLuint& program, const GLenum& binaryFormat, std::unique_ptr<dataType[]> binary, const GLsizei& length)
 	{
-		executeCommand(std::make_shared<GlProgramBinaryCommand<dataType>>(program, binaryFormat, std::move(binary), length));
+		if(m_threaded_wrapper)
+			executeCommand(std::make_shared<GlProgramBinaryCommand<dataType>>(program, binaryFormat, std::move(binary), length));
+		else
+			g_glProgramBinary(program, binaryFormat, binary.get(), length);
 	}
 
 	template <class pixelType>
-	void FunctionWrapper::glTextureSubImage2DUnbuffered(const GLuint& texture, const GLint& level, const GLint& xoffset, const GLint& yoffset, const GLsizei& width, const GLsizei& height, const GLenum& format, const GLenum& type, std::unique_ptr<pixelType[]> pixels)
+	void  FunctionWrapper::glTextureSubImage2DUnbuffered(const GLuint& texture, const GLint& level, const GLint& xoffset, const GLint& yoffset, const GLsizei& width, const GLsizei& height, const GLenum& format, const GLenum& type, std::unique_ptr<pixelType[]> pixels)
 	{
-		executeCommand(std::make_shared<GlTextureSubImage2DUnbufferedCommand<pixelType>>(texture, level, xoffset, yoffset, width, height, format, type, std::move(pixels)));
+		if(m_threaded_wrapper)
+			executeCommand(std::make_shared<GlTextureSubImage2DUnbufferedCommand<pixelType>>(texture, level, xoffset, yoffset, width, height, format, type, std::move(pixels)));
+		else
+			g_glTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, type, pixels.get());
 	}
 }

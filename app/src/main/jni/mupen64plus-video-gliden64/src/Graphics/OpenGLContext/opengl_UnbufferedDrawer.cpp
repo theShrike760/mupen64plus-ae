@@ -72,7 +72,7 @@ void UnbufferedDrawer::drawTriangles(const graphics::Context::DrawTriangleParame
 	}
 
 	if (config.generalEmulation.enableHWLighting != 0)
-		FunctionWrapper::glVertexAttrib1fNotThreadSafe(triangleAttrib::numlights, GLfloat(_params.vertices[0].HWLight));
+		FunctionWrapper::glVertexAttrib1f(triangleAttrib::numlights, GLfloat(_params.vertices[0].HWLight));
 
 	m_cachedAttribArray->enableVertexAttribArray(rectAttrib::position, false);
 	m_cachedAttribArray->enableVertexAttribArray(rectAttrib::texcoord0, false);
