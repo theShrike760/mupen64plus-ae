@@ -16,7 +16,7 @@ namespace opengl {
 			m_commandQueue.push(_command);
 			_command->waitOnCommand();
 		} else {
-			_command->performCommand();
+			_command->performCommandSingleThreaded();
 		}
 	}
 
@@ -26,7 +26,7 @@ namespace opengl {
 			m_commandQueue.pushBack(_command);
 			_command->waitOnCommand();
 		} else {
-			_command->performCommand();
+			_command->performCommandSingleThreaded();
 		}
 	}
 

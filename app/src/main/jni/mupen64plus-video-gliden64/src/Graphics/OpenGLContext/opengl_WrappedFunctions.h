@@ -25,14 +25,15 @@ namespace opengl {
 	class OpenGlCommand
 	{
 	protected:
-		OpenGlCommand (bool _synced, bool _logIfSynced, std::string _functionName, bool _isGlCommand = true):
+		OpenGlCommand (const bool& _synced, const bool& _logIfSynced, const std::string& _functionName,
+			const bool& _isGlCommand = true):
 			m_synced(_synced),
-			m_logIfSynced(_logIfSynced),
-			m_executed(false),
+			m_executed(false)
 #ifdef GL_DEBUG
-m_functionName(std::move(_functionName)),
-#endif
+			m_logIfSynced(_logIfSynced),
+			m_functionName(std::move(_functionName)),
 			m_isGlCommand(_isGlCommand)
+#endif
 		{
 		}
 
@@ -41,17 +42,17 @@ m_functionName(std::move(_functionName)),
 	private:
 		std::atomic<bool> m_synced;
 		bool m_executed;
-		const bool m_isGlCommand;
-		const bool m_logIfSynced;
 		std::mutex m_condvarMutex;
 		std::condition_variable m_condition;
 	protected:
 #ifdef GL_DEBUG
-const std::string m_functionName;
+		const bool m_logIfSynced;
+		const std::string m_functionName;
+		const bool m_isGlCommand;
 #endif
 	public:
-		void performCommand(void) {
-			std::unique_lock<std::mutex> lock(m_condvarMutex);
+		void performCommandSingleThreaded(void)
+		{
 			commandToExecute();
 #ifdef GL_DEBUG
 			if(m_isGlCommand)
@@ -65,6 +66,11 @@ const std::string m_functionName;
 				}
 			}
 #endif
+		}
+
+		void performCommand(void) {
+			std::unique_lock<std::mutex> lock(m_condvarMutex);
+			performCommandSingleThreaded();
 			if (m_synced)
 			{
 #ifdef GL_DEBUG
@@ -279,7 +285,7 @@ const std::string m_functionName;
 	class GlBindTextureCommand : public OpenGlCommand
 	{
 	public:
-		GlBindTextureCommand(GLenum target, GLuint texture):
+		GlBindTextureCommand(const GLenum& target, const GLuint& texture):
 			OpenGlCommand(false, false, "glBindTexture"), m_target(target), m_texture(texture)
 		{
 		}
@@ -289,8 +295,8 @@ const std::string m_functionName;
 			g_glBindTexture(m_target, m_texture);
 		}
 	private:
-		GLenum m_target;
-		GLuint m_texture;
+		const GLenum m_target;
+		const GLuint m_texture;
 	};
 
 	template <class pixelType>
@@ -691,7 +697,7 @@ const std::string m_functionName;
 	class GlActiveTextureCommand : public OpenGlCommand
 	{
 	public:
-		GlActiveTextureCommand(GLenum texture):
+		GlActiveTextureCommand(const GLenum& texture):
 			OpenGlCommand(false, false, "glActiveTexture"), m_texture(texture)
 		{
 		}
@@ -701,7 +707,7 @@ const std::string m_functionName;
 			g_glActiveTexture(m_texture);
 		}
 	private:
-		GLenum m_texture;
+		const GLenum m_texture;
 	};
 
 	class GlBlendColorCommand : public OpenGlCommand
