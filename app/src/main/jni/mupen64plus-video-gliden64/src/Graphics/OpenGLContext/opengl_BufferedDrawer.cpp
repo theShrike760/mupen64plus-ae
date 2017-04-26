@@ -213,7 +213,6 @@ void BufferedDrawer::drawTriangles(const graphics::Context::DrawTriangleParamete
 	}
 
 	if (config.frameBufferEmulation.N64DepthCompare == 0) {
-		//std::unique_ptr<char[]> indices
 
 		char* indices = (char*)nullptr + m_trisBuffers.ebo.pos - _params.elementsCount;
 		FunctionWrapper::glDrawElementsBaseVertex(GLenum(_params.mode), _params.elementsCount, GL_UNSIGNED_BYTE,
